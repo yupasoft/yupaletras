@@ -25,12 +25,17 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
 #stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
 #stage .osc{position:absolute;inset:0;z-index:1}
 #dr{position:absolute;inset:0}
+/* Escondido sigue dibujándose (invisible): así lo que se carga de antemano está de verdad listo al mostrarlo */
+#dr[hidden]{display:block!important;opacity:0;pointer-events:none}
 #dr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0;z-index:1;background:#000}
 #dr iframe.on{opacity:1;z-index:2}
 #visor{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2;background:#000}
 /* Video de la computadora: entero en pantalla, sin recortar */
 #vd{position:absolute;inset:0;background:#000}
 #vd video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+/* Foto de la computadora: entera en pantalla, sin recortar */
+#ft{position:absolute;inset:0;background:#000}
+#ft img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 /* Tapa: evita que un clic en esta ventana avance la presentación por su cuenta y la desacomode del control */
 #tapa{position:absolute;inset:0;z-index:5}
 #negro{position:absolute;inset:0;z-index:6;background:#000}
@@ -49,6 +54,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
   <div class="frame" id="stage" hidden></div>
   <div id="dr" hidden></div>
   <div id="vd" hidden></div>
+  <div id="ft" hidden></div>
   <div id="tapa"></div>
   <div id="negro" hidden></div>
   <div id="guia"><div>
@@ -69,7 +75,7 @@ const decir = m => { if (canal) canal.postMessage(m); };
 let hay = false;      // hay algo en pantalla
 
 /* ---------- Canción (el control manda el texto y el estilo ya calculados) ---------- */
-const VARS = ['--sbg', '--stx', '--sff', '--sfw', '--sal', '--ssh'];
+const VARS = ['--sbg', '--stx', '--sff', '--sfw', '--sal', '--ssh'], puesto = {};
 /* Video de fondo: se lee del almacén de este equipo. Si no está, queda el fondo normal (un cuadro del video o el color). */
 let vidId = null, vidUrl = null;
 function quitarVideo() {
@@ -94,7 +100,7 @@ function ponerVideo(v) {
 function cancion(m) {
   const st = $('stage'); st.querySelectorAll('.slide').forEach(x => x.remove());
   ponerVideo(m.video);
-  VARS.forEach(k => { if (m.vars && typeof m.vars[k] === 'string') st.style.setProperty(k, m.vars[k]); });
+  VARS.forEach(k => { const v = m.vars && m.vars[k]; if (typeof v === 'string' && puesto[k] !== v) { puesto[k] = v; st.style.setProperty(k, v); } });      // el fondo no se vuelve a poner si es el mismo
   const d = document.createElement('div'); d.className = 'slide';
   for (const p of (m.partes || [])) {
     const t = document.createElement('div'); t.className = 'tx' + (p.au ? ' au' : ''); t.textContent = String(p.txt || '');
@@ -105,33 +111,54 @@ function cancion(m) {
 }
 
 /* ---------- Presentación de Google: cada diapositiva es una carga aparte, así que se tiene lista la vecina ---------- */
-const pool = new Map(); let dv = null;
+/* Para que el cambio sea instantáneo se tienen cargadas de antemano varias diapositivas (más hacia adelante que hacia atrás):
+   pasar a una que ya está lista es solo mostrarla. Si la lista de reproducción sigue con otra presentación, su primera
+   diapositiva también se va cargando (pre). */
+const ATRAS = 2, ADELANTE = 6, JUNTAS = 3;      // cuántas se guardan a cada lado y cuántas cargan a la vez
+const pool = new Map(); let dv = null, pre = null;
 const esDocs = u => typeof u === 'string' && /^https:\/\/docs\.google\.com\/presentation\/d\/(e\/)?[\w-]+\/embed\?[\w=&.-]*$/.test(u);
-function soltarDrive() { pool.forEach(o => o.f.remove()); pool.clear(); dv = null; }
-function pedir(k) {
-  if (!dv || k < 1 || (dv.total && k > dv.total) || pool.has(k)) return;
+function marco(base, k) {
   const f = document.createElement('iframe'), o = { f, listo: false };
   f.setAttribute('tabindex', '-1'); f.title = 'Diapositiva ' + k;
   f.addEventListener('load', () => setTimeout(() => { o.listo = true; mostrar(); }, 1200));      // deja terminar la entrada de la diapositiva
-  f.src = dv.base + '#slide=' + k;
-  $('dr').appendChild(f); pool.set(k, o);
+  f.src = base + '#slide=' + k;
+  $('dr').appendChild(f); return o;
+}
+function soltarDrive() { pool.forEach(o => o.f.remove()); pool.clear(); dv = null; }
+function vecinas() {      // por cercanía, primero las de adelante
+  const r = [], ad = dv.total ? ADELANTE : 2;      // sin saber cuántas tiene, no se piden muchas de más
+  for (let d = 1; d <= ad; d++) {
+    if (!dv.total || dv.n + d <= dv.total) r.push(dv.n + d);
+    if (d <= ATRAS && dv.n - d >= 1) r.push(dv.n - d);
+  }
+  return r;
 }
 function mostrar() {
   if (!dv) return;
-  const o = pool.get(dv.n);
-  if (!o || !o.listo) return;      // mientras carga, sigue a la vista la anterior (sin parpadeo a negro)
-  pool.forEach((x, k) => x.f.classList.toggle('on', k === dv.n));
-  pool.forEach((x, k) => { if (Math.abs(k - dv.n) > 1) { x.f.remove(); pool.delete(k); } });
-  pedir(dv.n + 1); pedir(dv.n - 1);
+  if (!pool.has(dv.n)) pool.set(dv.n, marco(dv.base, dv.n));
+  if (pool.get(dv.n).listo) { dv.vista = dv.n; pool.forEach((x, k) => x.f.classList.toggle('on', k === dv.n)); }      // mientras carga, sigue a la vista la anterior (sin parpadeo a negro)
+  const q = vecinas();
+  pool.forEach((x, k) => { if (k !== dv.n && k !== dv.vista && !q.includes(k)) { x.f.remove(); pool.delete(k); } });
+  let c = 0; pool.forEach(x => { if (!x.listo) c++; });
+  for (const k of q) { if (c >= JUNTAS) break; if (!pool.has(k)) { pool.set(k, marco(dv.base, k)); c++; } }
 }
 function drive(m) {
   if (!esDocs(m.base)) return;
   quitarVideo(); quitarPeli();
   const n = Math.max(1, Math.floor(+m.n || 1));
-  if (!dv || dv.base !== m.base) { soltarDrive(); dv = { base: m.base, n, total: 0 }; }
+  if (!dv || dv.base !== m.base) {
+    soltarDrive(); dv = { base: m.base, n, total: 0, vista: 0 };
+    if (pre && pre.base === m.base && n === 1) { pool.set(1, pre.o); pre = null; }      // ya venía cargándose
+  }
   dv.n = n; dv.total = Math.floor(+m.total || 0);
   quitarVisor(); $('stage').hidden = true; $('dr').hidden = false;
-  pedir(n); mostrar();
+  mostrar();
+}
+function siguiente(base) {      // la presentación que sigue en la lista de reproducción
+  if (!esDocs(base) || (dv && dv.base === base)) base = null;
+  if (pre && pre.base === base) return;
+  if (pre) { pre.o.f.remove(); pre = null; }
+  if (base) pre = { base, o: marco(base, 1) };
 }
 
 /* ---------- Otro archivo de Drive (visor de Google): se maneja en esta misma ventana ---------- */
@@ -180,13 +207,31 @@ function peli(m) {
   if (!m.pausa) tocar();
 }
 
+/* ---------- Foto de la computadora: el control manda el archivo. La anterior sigue a la vista hasta que la nueva está lista ---------- */
+let fk = null, fUrl = null;
+function quitarFoto() { fk = null; $('ft').textContent = ''; $('ft').hidden = true; if (fUrl) { URL.revokeObjectURL(fUrl); fUrl = null; } }
+function foto(m) {
+  if (!(m.archivo instanceof Blob) || typeof m.fk !== 'string') return;
+  quitarVideo(); quitarPeli(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('ft').hidden = false;
+  if (fk === m.fk) return;
+  fk = m.fk;
+  const url = URL.createObjectURL(m.archivo), im = new Image(); im.alt = '';
+  const lista = () => {
+    if (fk !== m.fk) { URL.revokeObjectURL(url); return; }
+    $('ft').replaceChildren(im); if (fUrl) URL.revokeObjectURL(fUrl); fUrl = url;
+  };
+  im.src = url; (im.decode ? im.decode() : Promise.resolve()).then(lista, lista);
+}
+
 if (canal) canal.onmessage = e => {
   const m = e.data || {};
   if (m.t === 'vcmd') { if (pv && m.vk === pk && m.c === 'ir') { try { pv.currentTime = Math.max(0, Math.min(isFinite(pv.duration) ? pv.duration : 1e9, +m.s || 0)); } catch (x) { } } return; }
   if (m.t === 'ping') { decir({ t: 'hola' }); return; }
   if (m.t === 'cerrar') { window.close(); return; }
-  if (m.t === 'nada') { hay = false; quitarVideo(); quitarPeli(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
-  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else if (m.t === 'video') peli(m); else return;
+  if (m.t === 'nada') { hay = false; quitarVideo(); quitarPeli(); quitarFoto(); soltarDrive(); siguiente(null); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
+  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else if (m.t === 'video') peli(m); else if (m.t === 'foto') foto(m); else return;
+  if (m.t !== 'foto') quitarFoto();
+  siguiente(m.prox);
   hay = true; $('guia').hidden = true; $('negro').hidden = !m.negro;
 };
 else $('estado').textContent = 'Este navegador no permite conectar las dos ventanas. Usa Chrome o Edge.';

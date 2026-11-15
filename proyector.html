@@ -28,6 +28,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
 #dr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0;z-index:1;background:#000}
 #dr iframe.on{opacity:1;z-index:2}
 #visor{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2;background:#000}
+/* Video de la computadora: entero en pantalla, sin recortar */
+#vd{position:absolute;inset:0;background:#000}
+#vd video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
 /* Tapa: evita que un clic en esta ventana avance la presentación por su cuenta y la desacomode del control */
 #tapa{position:absolute;inset:0;z-index:5}
 #negro{position:absolute;inset:0;z-index:6;background:#000}
@@ -45,6 +48,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
 <div id="esc">
   <div class="frame" id="stage" hidden></div>
   <div id="dr" hidden></div>
+  <div id="vd" hidden></div>
   <div id="tapa"></div>
   <div id="negro" hidden></div>
   <div id="guia"><div>
@@ -97,7 +101,7 @@ function cancion(m) {
     t.style.setProperty('--fs', +p.fs || 40); d.appendChild(t);
   }
   st.appendChild(d);
-  soltarDrive(); quitarVisor(); st.hidden = false; $('dr').hidden = true;
+  quitarPeli(); soltarDrive(); quitarVisor(); st.hidden = false; $('dr').hidden = true;
 }
 
 /* ---------- Presentación de Google: cada diapositiva es una carga aparte, así que se tiene lista la vecina ---------- */
@@ -122,7 +126,7 @@ function mostrar() {
 }
 function drive(m) {
   if (!esDocs(m.base)) return;
-  quitarVideo();
+  quitarVideo(); quitarPeli();
   const n = Math.max(1, Math.floor(+m.n || 1));
   if (!dv || dv.base !== m.base) { soltarDrive(); dv = { base: m.base, n, total: 0 }; }
   dv.n = n; dv.total = Math.floor(+m.total || 0);
@@ -134,17 +138,55 @@ function drive(m) {
 function quitarVisor() { const v = $('visor'); if (v) v.remove(); $('tapa').hidden = false; }
 function visor(m) {
   if (typeof m.url !== 'string' || !/^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/preview$/.test(m.url)) return;
-  quitarVideo(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
+  quitarVideo(); quitarPeli(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
   const f = document.createElement('iframe'); f.id = 'visor'; f.title = 'Archivo de Drive'; f.src = m.url;
   $('esc').appendChild(f); $('tapa').hidden = true;      // sin tapa: hay que poder desplazarlo aquí
 }
 
+/* ---------- Video de la computadora: el control manda el archivo; aquí se reproduce y se avisa por dónde va ---------- */
+let pk = null, pv = null, pUrl = null, pMudo = false;
+function informar(extra) { if (pv) decir(Object.assign({ t: 'vt', vk: pk, cur: pv.currentTime || 0, dur: isFinite(pv.duration) ? pv.duration : 0, pausa: pv.paused || pv.ended, mudo: pMudo }, extra || {})); }
+function quitarPeli() {
+  if (pv) { const v = pv; pv = null; try { v.pause(); } catch (e) { } v.removeAttribute('src'); try { v.load(); } catch (e) { } v.remove(); }
+  if (pUrl) { URL.revokeObjectURL(pUrl); pUrl = null; }
+  pk = null; pMudo = false; $('vd').hidden = true;
+}
+// El navegador puede negar el sonido si en esta ventana aún no se hizo ningún clic: entonces arranca sin sonido y se avisa al control
+function tocar() {
+  const v = pv, p = v.play(); if (!p || !p.catch) return;
+  p.catch(e => {
+    if (v !== pv || !e || e.name !== 'NotAllowedError' || v.muted) return;
+    v.muted = true; pMudo = true; const q = v.play(); if (q && q.catch) q.catch(() => { }); informar();
+  });
+}
+function conSonido() { if (pv && pMudo) { pv.muted = false; pMudo = false; informar(); } }
+function peli(m) {
+  if (!(m.archivo instanceof Blob) || typeof m.vk !== 'string') return;
+  quitarVideo(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
+  if (pk === m.vk && pv) {      // el mismo video: solo cambia pausa o repetir
+    pv.loop = !!m.bucle;
+    const quieto = pv.paused || pv.ended;
+    if (m.pausa && !quieto) pv.pause();
+    else if (!m.pausa && quieto) { if (pv.ended) pv.currentTime = 0; tocar(); }
+    return;
+  }
+  quitarPeli(); pk = m.vk; $('vd').hidden = false;
+  const v = pv = document.createElement('video'); let ult = 0;
+  v.playsInline = true; v.preload = 'auto'; v.loop = !!m.bucle; v.setAttribute('tabindex', '-1');
+  v.addEventListener('timeupdate', () => { const a = Date.now(); if (v === pv && a - ult > 400) { ult = a; informar(); } });
+  ['play', 'pause', 'ended', 'loadedmetadata', 'durationchange', 'seeked'].forEach(n => v.addEventListener(n, () => { if (v === pv) informar(); }));
+  v.addEventListener('error', () => { if (v === pv) informar({ error: true }); });
+  pUrl = URL.createObjectURL(m.archivo); v.src = pUrl; $('vd').appendChild(v);
+  if (!m.pausa) tocar();
+}
+
 if (canal) canal.onmessage = e => {
   const m = e.data || {};
+  if (m.t === 'vcmd') { if (pv && m.vk === pk && m.c === 'ir') { try { pv.currentTime = Math.max(0, Math.min(isFinite(pv.duration) ? pv.duration : 1e9, +m.s || 0)); } catch (x) { } } return; }
   if (m.t === 'ping') { decir({ t: 'hola' }); return; }
   if (m.t === 'cerrar') { window.close(); return; }
-  if (m.t === 'nada') { hay = false; quitarVideo(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
-  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else return;
+  if (m.t === 'nada') { hay = false; quitarVideo(); quitarPeli(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
+  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else if (m.t === 'video') peli(m); else return;
   hay = true; $('guia').hidden = true; $('negro').hidden = !m.negro;
 };
 else $('estado').textContent = 'Este navegador no permite conectar las dos ventanas. Usa Chrome o Edge.';
@@ -153,8 +195,10 @@ else $('estado').textContent = 'Este navegador no permite conectar las dos venta
 function completa() { if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); }
 $('bFs').onclick = completa;
 document.addEventListener('dblclick', completa);
+document.addEventListener('pointerdown', conSonido);
 document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) $('guia').hidden = true; else if (!hay) $('guia').hidden = false; });
 document.addEventListener('keydown', e => {
+  conSonido();
   if (e.key === 'f' || e.key === 'F') { completa(); return; }
   if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' ', 'Enter', 'Backspace', 'Home', 'End', 'b', 'B', '.'].includes(e.key)) { decir({ t: 'tecla', k: e.key }); e.preventDefault(); }
 });

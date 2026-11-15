@@ -123,22 +123,42 @@ h2{font-size:16px;margin:0}
 .slide .tx{white-space:pre;line-height:1.25;font-size:calc(var(--fs) * 0.078125cqw)}
 .slide .au{margin-top:2cqw;opacity:.85;font-weight:400}
 
-/* Proyección */
-#show,#gshow{position:fixed;inset:0;background:#000;z-index:60;display:flex;align-items:center;justify-content:center}
-#show .frame{width:min(100vw,177.78vh)}
-#show.quieto{cursor:none}
-#num{position:absolute;right:14px;bottom:10px;color:#fff;opacity:.35;font:500 13px 'IBM Plex Mono',monospace}
-#show.quieto #num{opacity:0}
-#salir,#gclose{position:absolute;top:10px;right:10px;z-index:2;min-height:38px;padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;font-weight:600;opacity:.3}
-#salir:hover,#gclose:hover{opacity:1}
-#show.quieto #salir{opacity:0}
-#gshow iframe{width:100%;height:100%;border:0}
+/* Control de lo que está en la pantalla de proyección */
+#bPant i{width:9px;height:9px;border-radius:50%;background:var(--mute);flex:none}
+#bPant.viva i{background:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent)}
+#ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 28px;border-top:1px solid var(--bd);background:var(--card)}
+#ctrl .mini{flex:none;width:128px;border-radius:6px;overflow:hidden;border:1px solid var(--bd);background:#000}
+#ctrl .que{flex:1 1 220px;min-width:0}
+#ctrl .que b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctrl .que span{display:block;color:var(--mute);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctrl .nav{display:flex;align-items:center;gap:6px}
+#ctrl .nav .bt{min-width:52px;font-size:18px}
+#cNum{min-width:74px;text-align:center;font:600 14px 'IBM Plex Mono',monospace}
+#cNegro[aria-pressed="true"]{background:var(--amb);border-color:var(--amb);color:#0C1A2E}
 #print{display:none}
 
 /* Ventana */
 .velo{position:fixed;inset:0;z-index:70;background:rgba(5,12,22,.72);display:flex;align-items:center;justify-content:center;padding:16px}
 .velo .card{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:var(--sombra)}
 .velo .fila{margin-top:16px;justify-content:flex-end}
+/* Vista previa de una presentación de Drive */
+.velo .card.vista{width:min(1180px,100%)}
+.vista .cab{display:flex;align-items:flex-start;gap:12px}
+.vista .cab h2{flex:1;min-width:0;font-size:18px}
+.vgrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;margin-top:14px}
+.vmarco{position:relative;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--bd)}
+.vmarco iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vmarco .vtapa{position:absolute;inset:0}
+.vnav{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.vnav span{min-width:74px;text-align:center;font:600 14px 'IBM Plex Mono',monospace}
+.vlista{max-height:min(54vh,470px);overflow:auto;display:flex;flex-direction:column;gap:6px}
+.vlista button{display:flex;gap:10px;text-align:left;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:transparent;font-size:13.5px;line-height:1.4;white-space:pre-line}
+.vlista button:hover{border-color:var(--acc)}
+.vlista button.on{border-color:var(--acc);background:var(--card2)}
+.vlista button i{flex:none;min-width:20px;font:500 11px/1.7 'IBM Plex Mono',monospace;font-style:normal;color:var(--mute)}
+.vlista .sin{color:var(--mute)}
+.velo .vista .fila{flex-wrap:wrap}
+@media (max-width:900px){.vgrid{grid-template-columns:minmax(0,1fr)}.vlista{max-height:34vh}.velo .vista .fila .bt{flex:1 1 45%}}
 
 @media (max-width:900px){
   .crear{grid-template-columns:minmax(0,1fr)}
@@ -149,6 +169,7 @@ h2{font-size:16px;margin:0}
 }
 @media (max-width:640px){
   .barra-in{padding:10px 14px}.tabs{padding:0 8px}
+  #ctrl{padding:8px 14px}#ctrl .mini{width:96px}#ctrl .que{flex-basis:140px}
   main{padding:14px 14px 96px}
   .solo-pc{display:none!important}
   .bt{min-height:44px}
@@ -160,7 +181,7 @@ h2{font-size:16px;margin:0}
 @page{size:1280px 720px;margin:0}
 @media print{
   html,body{background:#fff}
-  #app,#gate,#show,#gshow,#modal,.toast,.vv-fondo{display:none!important}
+  #app,#gate,#modal,.toast,.vv-fondo{display:none!important}
   #print{display:block}
   #print .frame{width:1280px;height:720px;break-after:page}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -181,6 +202,7 @@ h2{font-size:16px;margin:0}
   <header class="barra">
     <div class="barra-in">
       <div class="marca"><span id="logo"></span><span>Yupaletras<small id="quien"></small></span></div>
+      <button class="bt peq" id="bPant" title="Abre la ventana que va en la pantalla del proyector"><i></i>Pantalla<span class="solo-pc"> de proyección</span></button>
       <button class="bt peq ico" id="bTema" aria-label="Cambiar tema" title="Cambiar tema">☀</button>
       <a class="bt peq" href="../portal/?menu=1" title="Mis herramientas">←<span class="solo-pc"> Mis herramientas</span></a>
     </div>
@@ -188,6 +210,17 @@ h2{font-size:16px;margin:0}
       <button data-tab="lib">Biblioteca</button>
       <button data-tab="crear">Crear diapositivas</button>
     </nav>
+    <div id="ctrl" hidden>
+      <div class="mini" id="cMini"></div>
+      <div class="que"><b id="cNom"></b><span id="cTxt"></span></div>
+      <div class="nav">
+        <button class="bt" id="cAnt" title="Anterior (flecha izquierda)" aria-label="Diapositiva anterior">◀</button>
+        <span id="cNum"></span>
+        <button class="bt pri" id="cSig" title="Siguiente (flecha derecha o barra espaciadora)" aria-label="Diapositiva siguiente">▶</button>
+      </div>
+      <button class="bt" id="cNegro" aria-pressed="false" title="Deja la pantalla en negro sin perder la diapositiva (tecla B)">Pantalla negra</button>
+      <button class="bt mal" id="cQuitar" title="Quita esto de la pantalla de proyección">Quitar</button>
+    </div>
   </header>
   <main>
     <!-- ================= Biblioteca ================= -->
@@ -232,7 +265,10 @@ h2{font-size:16px;margin:0}
             <div class="campo"><label for="fBg">Color de fondo</label><input id="fBg" type="color"></div>
             <div class="campo"><label for="fTx">Color del texto</label><input id="fTx" type="color" data-e="textColor"></div>
           </div>
-          <div class="campo"><span class="lb">Biblioteca de fondos</span></div>
+          <div class="campo"><span class="lb">Fondos de Yupaletras</span></div>
+          <div class="fondos" id="escenas"></div>
+          <label class="marcar" id="cMov"><input type="checkbox" data-e="mov">Con movimiento al proyectar</label>
+          <div class="campo"><span class="lb">Tus fondos (imágenes que subes)</span></div>
           <div class="fondos" id="fondos"></div>
           <input type="file" id="fFile" accept="image/*" hidden>
           <div class="campo" id="cOsc"><label for="fOsc">Oscurecer la imagen</label><input id="fOsc" type="range" data-e="overlay" min="0" max="85"></div>
@@ -254,27 +290,27 @@ h2{font-size:16px;margin:0}
           <div class="fila acciones">
             <span class="dim sep" id="count" style="margin-left:0;margin-right:auto"></span>
             <button class="bt pri" id="bGuardar">Guardar en la biblioteca</button>
-            <button class="bt" id="bShow">▶ Presentar</button>
+            <button class="bt" id="bShow">▶ Proyectar</button>
             <button class="bt" id="bNueva">Nueva</button>
+            <button class="bt" id="bDup" hidden title="Hace una copia para cambiarle la letra sin tocar la original">Duplicar</button>
             <button class="bt" id="bPptx">PowerPoint</button>
             <button class="bt solo-pc" id="bPdf">Imprimir / PDF</button>
             <button class="bt mal" id="bBorrar" hidden>Eliminar</button>
           </div>
           <div id="grid"></div>
-          <div class="vacio" id="empty"><b>Aún no hay diapositivas</b>Pega la letra de una canción y aparecerán aquí, listas para presentar.</div>
+          <div class="vacio" id="empty"><b>Aún no hay diapositivas</b>Pega la letra de una canción y aparecerán aquí, listas para proyectar.</div>
         </div>
       </div>
     </section>
   </main>
 </div>
 
-<div id="show" hidden><div class="frame" id="stage"></div><div id="num"></div><button id="salir">✕ Salir</button></div>
-<div id="gshow" hidden><button id="gclose">✕ Cerrar</button><iframe id="gframe" allow="fullscreen" title="Presentación de Drive"></iframe></div>
 <div id="print"></div>
 <div id="modal"></div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script src="../portal/vivo.js"></script>
+<script src="fondos.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -282,6 +318,8 @@ h2{font-size:16px;margin:0}
    Ingreso: misma sesión del portal Yupasoft (clave "yv_sesion"). Los permisos reales
    los pone la base (funciones yl_*); aquí solo se ocultan los botones que no tocan.
    Las presentaciones de Drive se muestran directo desde Google (no se descargan).
+   Proyectar = mandar a la ventana de proyección (proyector.html), que va en la pantalla del proyector;
+   esta ventana se queda como control. Se hablan por un BroadcastChannel (misma computadora y navegador).
    ===================================================================== */
 const SB_URL = 'https://ylwqztypjilecjwywawd.supabase.co', SB_KEY = 'sb_publishable_oHr1AqDbKi_lileKrmkhMg_4T6zYJ7E';
 const ID = 'yupaletras', PORTAL = '../portal/', WSP = 'https://wa.me/51967292374';
@@ -294,7 +332,7 @@ const SINPERMISO = 'No tienes permiso para hacer eso. Pídeselo al Responsable d
 let ses = null, P = null, acceso = 'ver', tab = 'lib';
 let D = { carpeta: null, lista: [], lista_el: null, lista_por: null, canciones: [], fondos: [] };
 const EST0 = { maxLines: 6, hideLabels: true, titleSlide: true, endBlank: true, font: 'Arial', bold: true, upper: false, shadow: true,
-  align: 'center', size: 96, textColor: '#ffffff', bgMode: 'color', c1: '#000000', c2: '#000000', fondo: null, overlay: 40 };
+  align: 'center', size: 96, textColor: '#ffffff', bgMode: 'color', c1: '#000000', c2: '#000000', fondo: null, escena: null, mov: true, overlay: 40 };
 const estiloDe = e => Object.assign({}, EST0, e && typeof e === 'object' ? e : {});
 let ed = { id: null, titulo: '', autor: '', letra: '', estilo: estiloDe() }, sucio = false;
 const puedeEditar = () => acceso === 'total' || acceso === 'editar';
@@ -486,8 +524,10 @@ function cargarFondo(id) {
   if (!fondoPide.has(id)) fondoPide.set(id, rpc('yl_fondo', { p_id: id, p_como: COMO || null }).then(img => { if (JPEG(img)) fondoImg.set(id, img); }).catch(() => { }).finally(() => fondoPide.delete(id)));
   return fondoPide.get(id);
 }
-function bgCss(E) {
-  const img = imagenDe(E);
+// Fondos incluidos (fondos.js): quietos en las miniaturas, PowerPoint y PDF; con movimiento solo en la pantalla de proyección
+const escenaDe = (E, mover) => E.bgMode === 'escena' && window.YLFondos && YLFondos.tiene(E.escena) ? YLFondos.uri(E.escena, !!(mover && E.mov)) : null;
+function bgCss(E, mover) {
+  const img = escenaDe(E, mover) || imagenDe(E);
   if (img) { const o = Math.max(0, Math.min(85, +E.overlay || 0)) / 100; return 'linear-gradient(rgba(0,0,0,' + o + '),rgba(0,0,0,' + o + ')),url("' + img + '") center/cover no-repeat'; }
   if (E.bgMode === 'gradient') return 'linear-gradient(135deg,' + HEX(E.c1) + ',' + HEX(E.c2) + ')';
   return HEX(E.c1);
@@ -498,16 +538,19 @@ function estilar(caja, E) {      // el estilo de la canción viaja como variable
   s.setProperty('--sfw', E.bold ? 700 : 400); s.setProperty('--sal', ['left', 'right'].includes(E.align) ? E.align : 'center');
   s.setProperty('--ssh', E.shadow ? '0 .04em .18em rgba(0,0,0,.65)' : 'none');
 }
-function slideEl(S, s) {
-  const E = S.estilo, d = el('div', 'slide');
-  if (s.type === 'lyrics') {
-    const L = wrap(E, s.lines), t = el('div', 'tx', shown(E, L.join('\n')));
-    t.style.setProperty('--fs', fit(E, L, E.size)); d.appendChild(t);
-  } else if (s.type === 'title') {
-    const z = titleSizes(S), t = el('div', 'tx', shown(E, z.L.join('\n')));
-    t.style.setProperty('--fs', z.t); d.appendChild(t);
-    if (z.a) { const a = el('div', 'tx au', String(S.autor).trim()); a.style.setProperty('--fs', z.a); d.appendChild(a); }
+function partesDe(S, s) {      // [{txt, fs, au}] · lo que lleva escrito una diapositiva
+  const E = S.estilo;
+  if (s.type === 'lyrics') { const L = wrap(E, s.lines); return [{ txt: shown(E, L.join('\n')), fs: fit(E, L, E.size) }]; }
+  if (s.type === 'title') {
+    const z = titleSizes(S), r = [{ txt: shown(E, z.L.join('\n')), fs: z.t }];
+    if (z.a) r.push({ txt: String(S.autor).trim(), fs: z.a, au: true });
+    return r;
   }
+  return [];
+}
+function slideEl(S, s) {
+  const d = el('div', 'slide');
+  for (const x of partesDe(S, s)) { const t = el('div', 'tx' + (x.au ? ' au' : ''), x.txt); t.style.setProperty('--fs', x.fs); d.appendChild(t); }
   return d;
 }
 function frameEl(S, s) { const f = el('div', 'frame'); f.appendChild(slideEl(S, s)); return f; }
@@ -518,15 +561,12 @@ function frameEl(S, s) { const f = el('div', 'frame'); f.appendChild(slideEl(S, 
 const norm = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const DOCS = 'https://docs.google.com/presentation/d/';
 const okId = id => /^[\w-]{10,100}$/.test(id || '');
-function itemUrls(it) {
-  return it.t === 's' ? { embed: DOCS + it.id + '/embed?start=false&loop=false&rm=minimal', tab: DOCS + it.id + '/present' }
-    : { embed: 'https://drive.google.com/file/d/' + it.id + '/preview', tab: 'https://drive.google.com/file/d/' + it.id + '/view' };
-}
-function driveUrls(u) {      // enlace pegado a mano
+const baseDocs = id => DOCS + id + '/embed?start=false&loop=false&rm=minimal';
+function driveUrls(u) {      // enlace pegado a mano → { base } presentación de Google · { visor } otro archivo de Drive
   let m;
-  if ((m = u.match(/docs\.google\.com\/presentation\/d\/e\/([\w-]+)/))) return { embed: DOCS + 'e/' + m[1] + '/embed?start=false&loop=false', tab: DOCS + 'e/' + m[1] + '/pub?start=false&loop=false' };
-  if ((m = u.match(/docs\.google\.com\/presentation\/d\/([\w-]+)/))) return itemUrls({ t: 's', id: m[1] });
-  if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/)) || (m = u.match(/drive\.google\.com\/.*[?&]id=([\w-]+)/))) return itemUrls({ t: 'p', id: m[1] });
+  if ((m = u.match(/docs\.google\.com\/presentation\/d\/e\/([\w-]+)/))) return { base: DOCS + 'e/' + m[1] + '/embed?start=false&loop=false' };
+  if ((m = u.match(/docs\.google\.com\/presentation\/d\/([\w-]+)/))) return { base: baseDocs(m[1]) };
+  if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/)) || (m = u.match(/drive\.google\.com\/.*[?&]id=([\w-]+)/))) return { visor: 'https://drive.google.com/file/d/' + m[1] + '/preview' };
   return null;
 }
 let todos = [], hallados = [];
@@ -552,15 +592,14 @@ function libRender() {
   for (const it of hallados) {
     const d = el('div', 'pz'), b = el('button', 'nm', it.name);
     if (it.sub) b.appendChild(el('small', '', it.sub));
-    b.title = 'Proyectar'; b.onclick = () => proyectar(it); d.appendChild(b);
+    b.title = 'Proyectar en la pantalla de proyección'; b.onclick = () => proyectar(it); d.appendChild(b);
     const op = (txt, tip, fn) => { const x = el('button', 'op', txt); x.title = tip; x.setAttribute('aria-label', tip); x.onclick = fn; d.appendChild(x); return x; };
     if (it.tipo === 'c') {
       d.appendChild(el('span', 'tg mia', 'CREADA'));
       op('✎', puedeEditar() ? 'Editar' : 'Ver', () => editar(it.c));
     } else {
-      if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint: se muestra en el visor de Drive. Impórtalo para proyectarlo a pantalla completa.'; d.appendChild(tg); }
+      if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint: Google no deja mostrarlo diapositiva por diapositiva, así que se proyecta su letra con el estilo de Yupaletras. Impórtalo para dejarlo guardado con su fondo.'; d.appendChild(tg); }
       if (puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
-      op('↗', 'Abrir en otra pestaña', () => window.open(itemUrls(it).tab, '_blank', 'noopener'));
     }
     g.appendChild(d);
   }
@@ -581,7 +620,82 @@ function libRender() {
 $('#q').addEventListener('input', libRender);
 $('#cat').addEventListener('change', libRender);
 $('#q').addEventListener('keydown', e => { if (e.key === 'Enter' && hallados.length) proyectar(hallados[0]); });
-function proyectar(it) { if (it.tipo === 'c') presentar({ titulo: it.c.titulo, autor: it.c.autor || '', letra: it.c.letra, estilo: estiloDe(it.c.estilo) }, 0); else gProject(itemUrls(it)); }
+function proyectar(it) {
+  if (it.tipo === 'c') proyectarCancion({ titulo: it.c.titulo, autor: it.c.autor || '', letra: it.c.letra, estilo: estiloDe(it.c.estilo) }, 0);
+  else if (it.t === 'p' && !puedeEditar()) proyectarPptx(it);      // sin permiso de leer el archivo: va directo al visor de Drive
+  else abrirVista(it);
+}
+
+/* Vista previa de una presentación de Drive: ver sus diapositivas y su letra antes de proyectarla,
+   y desde ahí modificarla o duplicarla (las dos la traen a «Crear diapositivas»; el archivo de Drive no se toca). */
+function abrirVista(it) {
+  let n = 0, textos = null, S = null, deck = null, vivo = true;
+  const velo = el('div', 'velo'), c = el('div', 'card vista');
+  const cab = el('div', 'cab'); cab.appendChild(el('h2', '', it.name));
+  const x = el('button', 'bt peq', '✕'); x.title = 'Cerrar'; x.setAttribute('aria-label', 'Cerrar'); x.onclick = cerrarModal; cab.appendChild(x); c.appendChild(cab);
+  c.appendChild(el('div', 'dim', it.t === 's' ? 'Presentación de Google en Drive' + (it.sub ? ' · ' + it.sub : '') : 'PowerPoint en Drive: se proyecta su letra con el estilo de Yupaletras' + (it.sub ? ' · ' + it.sub : '')));
+  const g = el('div', 'vgrid'), izq = el('div'), marco = el('div', 'vmarco'), nav = el('div', 'vnav'), lista = el('div', 'vlista');
+  const ant = el('button', 'bt', '◀'), num = el('span'), sig = el('button', 'bt', '▶');
+  ant.setAttribute('aria-label', 'Diapositiva anterior'); sig.setAttribute('aria-label', 'Diapositiva siguiente');
+  nav.appendChild(ant); nav.appendChild(num); nav.appendChild(sig); izq.appendChild(marco); izq.appendChild(nav); g.appendChild(izq); g.appendChild(lista); c.appendChild(g);
+  const pie = el('div', 'fila');
+  const bMod = el('button', 'bt', '✎ Modificar la letra'), bDup = el('button', 'bt', '⧉ Duplicar con otra letra'), bPro = el('button', 'bt pri', '▶ Proyectar');
+  bMod.id = 'vMod'; bDup.id = 'vDup'; bPro.id = 'vProy';
+  bMod.title = 'La trae a «Crear diapositivas» para corregirle la letra y guardarla en Yupaletras. El archivo de Drive no cambia.';
+  bDup.title = 'Hace una copia en «Crear diapositivas» para ponerle otra letra. El archivo de Drive no cambia.';
+  bMod.disabled = bDup.disabled = true;
+  if (puedeEditar()) { pie.appendChild(bMod); pie.appendChild(bDup); }
+  pie.appendChild(bPro); c.appendChild(pie); velo.appendChild(c);
+
+  const total = () => it.t === 's' ? (textos ? textos.length : 0) : (deck ? deck.length : 0);
+  function pintar() {
+    marco.textContent = '';
+    if (it.t === 's') {      // la diapositiva real, traída de Drive
+      const f = el('iframe'); f.title = 'Vista previa'; f.setAttribute('tabindex', '-1'); f.src = baseDocs(it.id) + '#slide=' + (n + 1);
+      marco.appendChild(f); marco.appendChild(el('div', 'vtapa'));
+    } else if (S) { estilar(marco, S.estilo); marco.appendChild(frameEl(S, deck[n])); }
+    num.textContent = (n + 1) + (total() ? ' / ' + total() : '');
+    ant.disabled = n <= 0; sig.disabled = !!total() && n >= total() - 1;
+    lista.querySelectorAll('button').forEach((b, i) => { b.classList.toggle('on', i === n); if (i === n) b.scrollIntoView({ block: 'nearest' }); });
+  }
+  function llenar(filas) {      // filas = [texto de cada diapositiva]
+    lista.textContent = '';
+    filas.forEach((t, i) => { const b = el('button', t ? '' : 'sin'); b.appendChild(el('i', '', String(i + 1))); b.appendChild(el('span', '', t || 'Sin texto')); b.onclick = () => { n = i; pintar(); }; lista.appendChild(b); });
+  }
+  const mover = d => { const t = total(); n = Math.max(0, Math.min(t ? t - 1 : 9999, n + d)); pintar(); };
+  ant.onclick = () => mover(-1); sig.onclick = () => mover(1);
+  velo.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { mover(-1); e.preventDefault(); } else if (e.key === 'ArrowRight') { mover(1); e.preventDefault(); } });
+  velo.addEventListener('mousedown', e => { if (e.target === velo) cerrarModal(); });
+  bPro.onclick = () => {
+    cerrarModal();
+    if (it.t === 's') proyectarDrive(baseDocs(it.id), it.name, it.id, { i: n, textos });
+    else if (S) proyectarCancion(S, n, it.name);
+    else proyectarPptx(it);
+  };
+  const traer = copia => {
+    if (!diapos) return;
+    if (sucio && !confirm('Tienes cambios sin guardar en «Crear diapositivas». Si traes esta canción, se pierden. ¿Continuar?')) return;
+    cerrarModal(); aCrear(copia ? (it.name + ' (otra letra)') : it.name, diapos);
+    toast(copia ? 'Copia lista: cambia la letra y presiona «Guardar en la biblioteca»' : 'Lista para modificar: corrige la letra y presiona «Guardar en la biblioteca»');
+  };
+  let diapos = null;
+  bMod.onclick = () => traer(false); bDup.onclick = () => traer(true);
+
+  lista.appendChild(el('div', 'dim', puedeEditar() ? 'Leyendo la letra…' : 'La letra no está disponible en modo de solo lectura.'));
+  $('#modal').textContent = ''; $('#modal').appendChild(velo); pintar(); bPro.focus();
+  velo.vivo = () => vivo; const obs = new MutationObserver(() => { if (!velo.isConnected) { vivo = false; obs.disconnect(); } }); obs.observe($('#modal'), { childList: true });
+  if (puedeEditar()) drive({ accion: 'importar', id: it.id }).then(d => {
+    if (!vivo) return;
+    diapos = (d.diapos || []).filter(l => Array.isArray(l) && l.length);
+    if (it.t === 's') { textos = Array.isArray(d.todas) ? d.todas : diapos; llenar(textos.map(l => (l || []).join('\n'))); }
+    else {
+      const letra = letraDe(diapos, it.name);
+      if (letra) { S = { titulo: it.name, autor: '', letra, estilo: Object.assign({}, ed.estilo) }; deck = allSlides(S); llenar(deck.map(s => s.type === 'title' ? 'Título: ' + it.name : s.type === 'blank' ? '' : s.lines.join('\n'))); }
+      else { lista.textContent = ''; lista.appendChild(el('div', 'dim', 'Este PowerPoint no tiene texto que se pueda leer (quizá la letra está puesta como imagen). Se proyectará en el visor de Drive.')); }
+    }
+    bMod.disabled = bDup.disabled = !diapos.length; pintar();
+  }).catch(e => { if (!vivo) return; lista.textContent = ''; lista.appendChild(el('div', 'dim', 'No se pudo leer la letra: ' + (e.message || 'error') + ' Igual puedes proyectarla.')); });
+}
 
 async function actualizar(boton) {
   await ocupado(boton, 'Leyendo Drive…', async () => {
@@ -622,30 +736,32 @@ async function guardarCarpeta(enlace, boton) {
 $('#bCarp').onclick = abrirCarpeta;
 
 /* Importar una presentación de Drive como canción de Yupaletras */
+function letraDe(diapos, nombre) {
+  let dp = (diapos || []).filter(x => Array.isArray(x) && x.length);
+  // Si la primera diapositiva es solo el título, no se repite: Yupaletras pone su propia diapositiva de título
+  if (dp.length > 1 && dp[0].length === 1) { const a = norm(dp[0][0]).replace(/[^a-z0-9]/g, ''), b = norm(nombre).replace(/[^a-z0-9]/g, ''); if (a && (b.includes(a) || a.includes(b))) dp = dp.slice(1); }
+  return dp.map(x => x.join('\n')).join('\n\n').slice(0, 20000);
+}
+function aCrear(titulo, diapos) {      // deja la letra en «Crear diapositivas» como canción nueva, sin guardar todavía
+  const letra = letraDe(diapos, titulo);
+  if (!letra) throw new Error('Esa presentación no tiene texto que se pueda copiar (quizá la letra está puesta como imagen).');
+  ed = { id: null, titulo: titulo.slice(0, 120), autor: '', letra, estilo: Object.assign({}, ed.estilo) };
+  sucio = true; llenarForm(); pintarFondos(); edRender(); setTab('crear');
+}
 async function importar(it, boton) {
   if (sucio && !confirm('Tienes cambios sin guardar en «Crear diapositivas». Si importas, se pierden. ¿Continuar?')) return;
   await ocupado(boton, '…', async () => {
     const d = await drive({ accion: 'importar', id: it.id });
-    let dp = (d.diapos || []).filter(x => Array.isArray(x) && x.length);
-    // Si la primera diapositiva es solo el título, no se repite: Yupaletras pone su propia diapositiva de título
-    if (dp.length > 1 && dp[0].length === 1) { const a = norm(dp[0][0]).replace(/[^a-z0-9]/g, ''), b = norm(it.name).replace(/[^a-z0-9]/g, ''); if (a && (b.includes(a) || a.includes(b))) dp = dp.slice(1); }
-    ed = { id: null, titulo: it.name.slice(0, 120), autor: '', letra: dp.map(x => x.join('\n')).join('\n\n').slice(0, 20000), estilo: Object.assign({}, ed.estilo) };
-    sucio = true; llenarForm(); edRender(); setTab('crear');
+    aCrear(it.name, d.diapos);
     toast('Importada: elige el fondo y presiona «Guardar en la biblioteca»');
   });
 }
 
-/* Proyectar algo de Drive */
-function gProject(r) {
-  const g = $('#gshow'); $('#gframe').src = r.embed; g.hidden = false;
-  if (g.requestFullscreen) g.requestFullscreen().catch(() => { });
-  $('#gframe').onload = () => { try { $('#gframe').focus(); } catch (e) { } };
-}
 $('#gGo').onclick = () => {
   const r = driveUrls($('#gUrl').value.trim());
-  if (r) gProject(r); else toast('Ese enlace no parece de una presentación de Google Drive');
+  if (!r) { toast('Ese enlace no parece de una presentación de Google Drive'); return; }
+  if (r.base) proyectarDrive(r.base, 'Enlace de Drive', null); else proyectarVisor(r.visor, 'Archivo de Drive');
 };
-$('#gclose').onclick = cerrarTodo;
 
 /* =====================================================================
    CREAR
@@ -673,18 +789,26 @@ PRESETS.forEach(p => {
 $('#fBg').addEventListener('input', e => { Object.assign(ed.estilo, { bgMode: 'color', c1: e.target.value, c2: e.target.value, fondo: null }); sucio = true; pintarFondos(); edRender(); });
 
 function pintarFondos() {
+  const es = $('#escenas'); es.textContent = '';
+  for (const e of (window.YLFondos ? YLFondos.lista : [])) {
+    const b = el('button', 'fo' + (ed.estilo.bgMode === 'escena' && ed.estilo.escena === e.id ? ' on' : ''));
+    b.title = e.nombre; b.setAttribute('aria-label', 'Fondo ' + e.nombre); b.style.backgroundImage = 'url("' + YLFondos.uri(e.id, false) + '")';
+    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'escena', escena: e.id, fondo: null }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); };
+    es.appendChild(b);
+  }
   const g = $('#fondos'); g.textContent = '';
   for (const f of D.fondos) {
     const b = el('button', 'fo' + (ed.estilo.bgMode === 'fondo' && ed.estilo.fondo === f.id ? ' on' : ''));
     b.title = f.nombre; b.setAttribute('aria-label', 'Fondo ' + f.nombre);
     if (JPEG(f.mini)) b.style.backgroundImage = 'url("' + f.mini + '")';
-    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'fondo', fondo: f.id }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); cargarFondo(f.id).then(edRender); };
+    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'fondo', fondo: f.id, escena: null }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); cargarFondo(f.id).then(edRender); };
     if (puedeTodo()) { const q = el('button', 'qx', '✕'); q.title = 'Eliminar este fondo'; q.setAttribute('aria-label', 'Eliminar el fondo ' + f.nombre); q.onclick = e => { e.stopPropagation(); borrarFondo(f, q); }; b.appendChild(q); }
     g.appendChild(b);
   }
   if (puedeEditar()) { const m = el('button', 'fo mas', '＋ Agregar'); m.title = 'Subir una imagen a la biblioteca de fondos'; m.onclick = () => $('#fFile').click(); g.appendChild(m); }
   else if (!D.fondos.length) g.appendChild(el('div', 'dim', 'Sin fondos todavía.'));
-  $('#cOsc').hidden = ed.estilo.bgMode !== 'fondo';
+  $('#cOsc').hidden = ed.estilo.bgMode !== 'fondo' && ed.estilo.bgMode !== 'escena';
+  $('#cMov').hidden = ed.estilo.bgMode !== 'escena';
 }
 function reducir(im, w, h, q) {      // recorta al centro en 16:9 y devuelve JPEG
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -705,7 +829,7 @@ $('#fFile').addEventListener('change', e => {
     await ocupado(tile, 'Subiendo…', async () => {
       const f = await rpc('yl_guardar_fondo', { p_nombre: nombre, p_mini: mini, p_imagen: grande });
       D.fondos.push(f); fondoImg.set(f.id, grande);
-      Object.assign(ed.estilo, { bgMode: 'fondo', fondo: f.id }); sucio = true;
+      Object.assign(ed.estilo, { bgMode: 'fondo', fondo: f.id, escena: null }); sucio = true;
       llenarForm(); pintarFondos(); edRender(); toast('Fondo agregado a la biblioteca');
     });
   };
@@ -731,11 +855,12 @@ function edRender() {
   $('#edEstado').textContent = !puedeEditar() ? 'Solo lectura' : guardada ? (sucio ? 'Editando · cambios sin guardar' : 'Guardada en la biblioteca') : (sucio ? 'Canción nueva · sin guardar' : 'Canción nueva');
   $('#bGuardar').hidden = !puedeEditar(); $('#bGuardar').textContent = guardada ? 'Guardar cambios' : 'Guardar en la biblioteca';
   $('#bNueva').hidden = !puedeEditar();
+  $('#bDup').hidden = !(guardada && puedeEditar());
   $('#bBorrar').hidden = !(guardada && puedeTodo());
   const nl = deck.filter(s => s.type === 'lyrics').length;
   deck.forEach((s, i) => {
     const c = el('div', 'dp'), f = frameEl(ed, s);
-    f.title = 'Presentar desde aquí'; f.onclick = () => presentar(ed, i); c.appendChild(f);
+    f.title = 'Proyectar desde aquí'; f.onclick = () => proyectarCancion(ed, i); c.appendChild(f);
     const bar = el('div', 'dpb');
     bar.appendChild(el('span', '', (i + 1) + (s.type === 'title' ? ' · Título' : s.type === 'blank' ? ' · Vacía' : '')));
     if (s.type === 'lyrics' && puedeEditar()) {
@@ -767,6 +892,11 @@ $('#bNueva').onclick = () => {
   ed = { id: null, titulo: '', autor: '', letra: '', estilo: Object.assign({}, ed.estilo) }; sucio = false;
   llenarForm(); edRender(); $('#fTit').focus();
 };
+$('#bDup').onclick = () => {
+  if (sucio && !confirm('Hay cambios sin guardar en esta canción; la copia los llevará, pero la original se queda como estaba guardada. ¿Continuar?')) return;
+  ed = { id: null, titulo: (ed.titulo.trim() + ' (copia)').slice(0, 120), autor: ed.autor, letra: ed.letra, estilo: Object.assign({}, ed.estilo) }; sucio = true;
+  llenarForm(); edRender(); $('#fLet').focus(); toast('Es una copia: cambia la letra y presiona «Guardar en la biblioteca»');
+};
 $('#bGuardar').onclick = e => ocupado(e.currentTarget, 'Guardando…', async () => {
   if (!ed.titulo.trim()) { $('#fTit').focus(); throw new Error('Ponle un título a la canción.'); }
   if (!lyricSlides(ed).length) { $('#fLet').focus(); throw new Error('Falta la letra.'); }
@@ -785,45 +915,141 @@ $('#bBorrar').onclick = e => {
 };
 window.addEventListener('beforeunload', borrador);
 
-/* ---------- Presentar ---------- */
-const show = $('#show'); let pres = null, quietoT = 0;
-function dibujar() {
-  const st = $('#stage'); st.textContent = '';
-  if (!pres.negro) st.appendChild(slideEl(pres.S, pres.deck[pres.i]));
-  $('#num').textContent = (pres.i + 1) + ' / ' + pres.deck.length;
+/* =====================================================================
+   PROYECTAR: esta ventana es el control; la imagen sale en la ventana de proyección.
+   pr = lo que está en pantalla: {tipo:'cancion', S, deck, i} · {tipo:'drive', base, i, total, textos} · {tipo:'visor', url}
+   ===================================================================== */
+const canal = 'BroadcastChannel' in window ? new BroadcastChannel('yl_proyector') : null;
+let pantalla = null, viva = false, pr = null;
+const decir = m => { if (canal) canal.postMessage(m); };
+function pintarPantalla() { $('#bPant').classList.toggle('viva', viva); $('#bPant').title = viva ? 'La pantalla de proyección está abierta' : 'Abre la ventana que va en la pantalla del proyector'; }
+// Si hay un segundo monitor y el navegador lo permite, la ventana se acomoda sola ahí
+async function acomodar(w) {
+  try {
+    if (!('getScreenDetails' in window)) return;
+    const d = await window.getScreenDetails(), otra = d.screens.find(s => s !== d.currentScreen);
+    if (!otra || w.closed) return;
+    w.moveTo(otra.availLeft, otra.availTop); w.resizeTo(otra.availWidth, otra.availHeight);
+  } catch (e) { }
 }
-function ir(n) { pres.i = Math.max(0, Math.min(pres.deck.length - 1, n)); pres.negro = false; dibujar(); }
-function presentar(S, i) {
-  const deck = allSlides(S);
+// Se llama dentro del clic (si no, el navegador bloquea la ventana). Devuelve false si no se pudo abrir.
+function asegurarPantalla(traer) {
+  if (!canal) { toast('Este navegador no permite la pantalla de proyección. Usa Chrome o Edge.'); return false; }
+  if (pantalla && !pantalla.closed) { if (traer) pantalla.focus(); return true; }
+  if (viva && !traer) return true;      // quedó abierta de antes (por ejemplo, tras recargar esta página)
+  pantalla = window.open('proyector.html', 'yl_proyector', 'popup,width=960,height=540');
+  if (!pantalla) { toast('El navegador bloqueó la ventana de proyección. Permite las ventanas emergentes de este sitio e inténtalo otra vez.'); return false; }
+  acomodar(pantalla);
+  return true;
+}
+$('#bPant').onclick = () => asegurarPantalla(true);
+if (canal) {
+  canal.onmessage = e => {
+    const m = e.data || {};
+    if (m.t === 'hola') { viva = true; pintarPantalla(); enviar(); }
+    else if (m.t === 'adios') { viva = false; pantalla = null; pintarPantalla(); }
+    else if (m.t === 'tecla') tecla(m.k);
+  };
+  decir({ t: 'ping' });
+  setInterval(() => { if (pantalla && pantalla.closed) { pantalla = null; viva = false; pintarPantalla(); } }, 1500);
+}
+function varsDe(E) {
+  return { '--sbg': bgCss(E, true), '--stx': HEX(E.textColor), '--sff': '"' + String(E.font).replace(/["\\;]/g, '') + '"', '--sfw': String(E.bold ? 700 : 400),
+    '--sal': ['left', 'right'].includes(E.align) ? E.align : 'center', '--ssh': E.shadow ? '0 .04em .18em rgba(0,0,0,.65)' : 'none' };
+}
+function enviar() {      // manda a la pantalla el estado completo (sirve también si la pantalla se abre o recarga después)
+  if (!pr) { decir({ t: 'nada' }); return; }
+  if (pr.tipo === 'cancion') decir({ t: 'cancion', vars: varsDe(pr.S.estilo), partes: partesDe(pr.S, pr.deck[pr.i]), negro: pr.negro });
+  else if (pr.tipo === 'drive') decir({ t: 'drive', base: pr.base, n: pr.i + 1, total: pr.total || 0, negro: pr.negro });
+  else decir({ t: 'visor', url: pr.url, negro: pr.negro });
+}
+function pintarCtrl() {
+  const c = $('#ctrl'); c.hidden = !pr; medirBarra();
+  if (!pr) return;
+  $('#cNom').textContent = pr.nombre;
+  const mini = $('#cMini'); mini.textContent = ''; mini.hidden = pr.tipo !== 'cancion';
+  let txt = '';
+  if (pr.tipo === 'cancion') {
+    estilar(mini, pr.S.estilo); mini.appendChild(frameEl(pr.S, pr.deck[pr.i]));
+    const s = pr.deck[pr.i]; txt = s.type === 'title' ? 'Título' : s.type === 'blank' ? 'Diapositiva vacía' : s.lines.join(' / ');
+    $('#cNum').textContent = (pr.i + 1) + ' / ' + pr.deck.length;
+  } else if (pr.tipo === 'drive') {
+    const l = pr.textos && pr.textos[pr.i]; txt = l && l.length ? l.join(' / ') : (pr.textos ? 'Diapositiva sin texto' : 'Presentación de Drive');
+    $('#cNum').textContent = (pr.i + 1) + (pr.total ? ' / ' + pr.total : '');
+  } else { txt = 'Se desplaza en la propia pantalla de proyección'; $('#cNum').textContent = ''; }
+  $('#cTxt').textContent = pr.negro ? 'Pantalla en negro' : txt;
+  const nav = pr.tipo !== 'visor'; $('#cAnt').hidden = !nav; $('#cSig').hidden = !nav;
+  $('#cAnt').disabled = pr.i <= 0;
+  $('#cSig').disabled = pr.tipo === 'cancion' ? pr.i >= pr.deck.length - 1 : !!(pr.total && pr.i >= pr.total - 1);
+  $('#cNegro').setAttribute('aria-pressed', pr.negro ? 'true' : 'false');
+}
+function ir(n) {
+  if (!pr || pr.tipo === 'visor') return;
+  const tope = pr.tipo === 'cancion' ? pr.deck.length - 1 : (pr.total ? pr.total - 1 : 9999);
+  pr.i = Math.max(0, Math.min(tope, n)); pr.negro = false; enviar(); pintarCtrl();
+}
+function poner(nuevo) {
+  pr = Object.assign({ i: 0, negro: false }, nuevo); enviar(); pintarCtrl();
+  // Suelta el buscador o la casilla donde estaba el cursor: desde ya las flechas pasan las diapositivas
+  const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur();
+}
+function quitar() { pr = null; enviar(); pintarCtrl(); }
+function proyectarCancion(S, i, nombre) {
+  const copia = { titulo: S.titulo, autor: S.autor, letra: S.letra, estilo: Object.assign({}, S.estilo) }, deck = allSlides(copia);
   if (!deck.length) { toast('Primero pega una letra'); return; }
-  pres = { S, deck, i: 0, negro: false };
-  estilar($('#stage'), S.estilo); show.hidden = false; ir(i || 0); despertar();
-  if (show.requestFullscreen) show.requestFullscreen().catch(() => { });
-  if (S.estilo.bgMode === 'fondo') cargarFondo(S.estilo.fondo).then(() => { if (pres && pres.S === S) estilar($('#stage'), S.estilo); });
+  if (!asegurarPantalla()) return;
+  poner({ tipo: 'cancion', S: copia, deck, i: Math.max(0, Math.min(deck.length - 1, i || 0)), nombre: nombre || String(S.titulo || '').trim() || 'Canción sin título' });
+  const actual = pr;
+  if (copia.estilo.bgMode === 'fondo') cargarFondo(copia.estilo.fondo).then(() => { if (pr === actual) { enviar(); pintarCtrl(); } });
 }
-function cerrarTodo() {
-  show.hidden = true; pres = null;
-  if (!$('#gshow').hidden) { $('#gshow').hidden = true; $('#gframe').src = 'about:blank'; }
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
+function proyectarDrive(base, nombre, id, desde) {
+  if (!asegurarPantalla()) return;
+  const tx = desde && Array.isArray(desde.textos) ? desde.textos : null;
+  poner({ tipo: 'drive', base, total: tx ? tx.length : 0, textos: tx, nombre, i: desde ? Math.max(0, desde.i || 0) : 0 });
+  if (tx) return;
+  const actual = pr;
+  // En segundo plano: cuántas diapositivas tiene y qué dice cada una, para el contador y la vista del control
+  if (id && puedeEditar()) drive({ accion: 'importar', id }).then(d => {
+    if (pr !== actual || !Array.isArray(d.todas)) return;
+    actual.textos = d.todas; actual.total = d.todas.length;
+    if (actual.i > actual.total - 1) { actual.i = actual.total - 1; enviar(); }
+    pintarCtrl();
+  }).catch(() => { });
 }
-function despertar() { show.classList.remove('quieto'); clearTimeout(quietoT); quietoT = setTimeout(() => show.classList.add('quieto'), 2500); }
-show.addEventListener('mousemove', despertar);
-show.addEventListener('click', e => { if (e.target.id === 'salir') return; ir(pres.i + (e.clientX < innerWidth * 0.3 ? -1 : 1)); });
-$('#salir').onclick = cerrarTodo;
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if ($('#modal').firstChild) { cerrarModal(); return; } if (!show.hidden || !$('#gshow').hidden) cerrarTodo(); return; }
-  if (show.hidden || !pres) return;
-  const k = e.key;
-  if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter') ir(pres.i + 1);
-  else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') ir(pres.i - 1);
+function proyectarVisor(url, nombre) { if (asegurarPantalla()) poner({ tipo: 'visor', url, nombre }); }
+async function proyectarPptx(it) {      // PowerPoint de Drive: se proyecta su letra con el estilo actual
+  if (!puedeEditar()) { if (asegurarPantalla()) poner({ tipo: 'visor', url: 'https://drive.google.com/file/d/' + it.id + '/preview', nombre: it.name }); return; }
+  if (!asegurarPantalla()) return;
+  toast('Preparando «' + it.name + '»…');
+  try {
+    const d = await drive({ accion: 'importar', id: it.id });
+    const letra = letraDe(d.diapos, it.name);
+    if (letra) proyectarCancion({ titulo: it.name, autor: '', letra, estilo: Object.assign({}, ed.estilo) }, 0, it.name);
+    else poner({ tipo: 'visor', url: 'https://drive.google.com/file/d/' + it.id + '/preview', nombre: it.name });
+  } catch (e) { toast(e.message || 'No se pudo preparar esa presentación'); }
+}
+function tecla(k) {
+  if (!pr) return false;
+  if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter') ir(pr.i + 1);
+  else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') ir(pr.i - 1);
   else if (k === 'Home') ir(0);
-  else if (k === 'End') ir(pres.deck.length - 1);
-  else if (k === 'b' || k === 'B' || k === '.') { pres.negro = !pres.negro; dibujar(); }
-  else return;
-  e.preventDefault();
+  else if (k === 'End' && (pr.tipo === 'cancion' || pr.total)) ir(9999);
+  else if (k === 'b' || k === 'B' || k === '.') { pr.negro = !pr.negro; enviar(); pintarCtrl(); }
+  else return false;
+  return true;
+}
+$('#cAnt').onclick = () => ir(pr.i - 1);
+$('#cSig').onclick = () => ir(pr.i + 1);
+$('#cNegro').onclick = () => { if (!pr) return; pr.negro = !pr.negro; enviar(); pintarCtrl(); };
+$('#cQuitar').onclick = quitar;
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#modal').firstChild) cerrarModal(); return; }
+  if (!pr || $('#modal').firstChild || e.ctrlKey || e.altKey || e.metaKey) return;
+  const t = e.target, tag = t && t.tagName;      // escribiendo o sobre un botón, las teclas son de ese control
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || ((tag === 'BUTTON' || tag === 'A') && (e.key === ' ' || e.key === 'Enter'))) return;
+  if (tecla(e.key)) e.preventDefault();
 });
-document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) cerrarTodo(); });
-$('#bShow').onclick = () => presentar(ed, 0);
+$('#bShow').onclick = () => proyectarCancion(ed, 0);
 
 /* ---------- PDF ---------- */
 $('#bPdf').onclick = async () => {
@@ -842,7 +1068,7 @@ function cargarPptx() {
 }
 const hex = c => HEX(c).replace('#', '').toUpperCase();
 function pptxBg(E) {
-  const img = E.bgMode === 'fondo' ? imagenDe(E) : null;
+  const img = escenaDe(E, false) || (E.bgMode === 'fondo' ? imagenDe(E) : null);
   if (!img && E.bgMode !== 'gradient') return Promise.resolve({ color: hex(E.c1) });
   const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; const g = c.getContext('2d');
   const listo = () => ({ data: c.toDataURL('image/jpeg', 0.88).replace(/^data:/, '') });
@@ -888,7 +1114,7 @@ window.addEventListener('resize', medirBarra);
 $('#gLogo').innerHTML = isotipo(46); $('#logo').innerHTML = isotipo(24);
 pintarTema();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
-window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio }), setTab };
+window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio, pr, viva }), setTab };
 comprobar();
 </script>
 </body>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Proyección · Yupaletras</title>
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#000000">
+<style>
+/* Ventana de proyección de Yupaletras: va en la pantalla del proyector. No pide cuenta ni guarda nada:
+   solo muestra lo que le manda la ventana de control (misma computadora, mismo navegador). */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,Segoe UI,Arial,sans-serif}
+#esc{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+.frame{container-type:inline-size;aspect-ratio:16/9;width:min(100vw,177.78vh);overflow:hidden}
+.slide{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:4.5cqw 6cqw;overflow:hidden;
+  background:var(--sbg,#000);color:var(--stx,#fff);font-family:var(--sff,Arial),Arial,sans-serif;font-weight:var(--sfw,700);text-align:var(--sal,center);text-shadow:var(--ssh,none)}
+.slide .tx{white-space:pre;line-height:1.25;font-size:calc(var(--fs) * 0.078125cqw)}
+.slide .au{margin-top:2cqw;opacity:.85;font-weight:400}
+/* El fondo va en el marco, que no se vuelve a crear al cambiar de diapositiva: así un fondo con movimiento no se reinicia */
+#stage{background:var(--sbg,#000)}
+#stage .slide{background:transparent}
+#dr{position:absolute;inset:0}
+#dr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0;z-index:1;background:#000}
+#dr iframe.on{opacity:1;z-index:2}
+#visor{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2;background:#000}
+/* Tapa: evita que un clic en esta ventana avance la presentación por su cuenta y la desacomode del control */
+#tapa{position:absolute;inset:0;z-index:5}
+#negro{position:absolute;inset:0;z-index:6;background:#000}
+#guia{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;padding:24px;background:#0C1A2E;color:#F4F7FA;text-align:center}
+#guia div{max-width:560px}
+#guia h1{font-size:clamp(20px,3.2vw,30px);margin:0 0 12px}
+#guia p{margin:0 0 10px;color:#9BB0C9;font-size:clamp(14px,1.9vw,17px);line-height:1.5}
+#guia button{margin-top:10px;min-height:46px;padding:10px 20px;border:0;border-radius:10px;background:#2ED3B7;color:#0C1A2E;font:700 16px system-ui,Segoe UI,Arial,sans-serif;cursor:pointer}
+#guia small{display:block;margin-top:14px;color:#9BB0C9}
+[hidden]{display:none!important}
+.sinraton,.sinraton *{cursor:none!important}
+</style>
+</head>
+<body>
+<div id="esc">
+  <div class="frame" id="stage" hidden></div>
+  <div id="dr" hidden></div>
+  <div id="tapa"></div>
+  <div id="negro" hidden></div>
+  <div id="guia"><div>
+    <h1>Pantalla de proyección</h1>
+    <p>Arrastra esta ventana a la pantalla del proyector.</p>
+    <p>Luego ponla a pantalla completa con el botón, con doble clic o con la tecla F11.</p>
+    <p>Todo lo que proyectes desde Yupaletras aparecerá aquí.</p>
+    <button id="bFs">Poner a pantalla completa</button>
+    <small id="estado">Esperando a Yupaletras…</small>
+  </div></div>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const canal = 'BroadcastChannel' in window ? new BroadcastChannel('yl_proyector') : null;
+const decir = m => { if (canal) canal.postMessage(m); };
+let hay = false;      // hay algo en pantalla
+
+/* ---------- Canción (el control manda el texto y el estilo ya calculados) ---------- */
+const VARS = ['--sbg', '--stx', '--sff', '--sfw', '--sal', '--ssh'];
+function cancion(m) {
+  const st = $('stage'); st.textContent = '';
+  VARS.forEach(k => { if (m.vars && typeof m.vars[k] === 'string') st.style.setProperty(k, m.vars[k]); });
+  const d = document.createElement('div'); d.className = 'slide';
+  for (const p of (m.partes || [])) {
+    const t = document.createElement('div'); t.className = 'tx' + (p.au ? ' au' : ''); t.textContent = String(p.txt || '');
+    t.style.setProperty('--fs', +p.fs || 40); d.appendChild(t);
+  }
+  st.appendChild(d);
+  soltarDrive(); quitarVisor(); st.hidden = false; $('dr').hidden = true;
+}
+
+/* ---------- Presentación de Google: cada diapositiva es una carga aparte, así que se tiene lista la vecina ---------- */
+const pool = new Map(); let dv = null;
+const esDocs = u => typeof u === 'string' && /^https:\/\/docs\.google\.com\/presentation\/d\/(e\/)?[\w-]+\/embed\?[\w=&.-]*$/.test(u);
+function soltarDrive() { pool.forEach(o => o.f.remove()); pool.clear(); dv = null; }
+function pedir(k) {
+  if (!dv || k < 1 || (dv.total && k > dv.total) || pool.has(k)) return;
+  const f = document.createElement('iframe'), o = { f, listo: false };
+  f.setAttribute('tabindex', '-1'); f.title = 'Diapositiva ' + k;
+  f.addEventListener('load', () => setTimeout(() => { o.listo = true; mostrar(); }, 1200));      // deja terminar la entrada de la diapositiva
+  f.src = dv.base + '#slide=' + k;
+  $('dr').appendChild(f); pool.set(k, o);
+}
+function mostrar() {
+  if (!dv) return;
+  const o = pool.get(dv.n);
+  if (!o || !o.listo) return;      // mientras carga, sigue a la vista la anterior (sin parpadeo a negro)
+  pool.forEach((x, k) => x.f.classList.toggle('on', k === dv.n));
+  pool.forEach((x, k) => { if (Math.abs(k - dv.n) > 1) { x.f.remove(); pool.delete(k); } });
+  pedir(dv.n + 1); pedir(dv.n - 1);
+}
+function drive(m) {
+  if (!esDocs(m.base)) return;
+  const n = Math.max(1, Math.floor(+m.n || 1));
+  if (!dv || dv.base !== m.base) { soltarDrive(); dv = { base: m.base, n, total: 0 }; }
+  dv.n = n; dv.total = Math.floor(+m.total || 0);
+  quitarVisor(); $('stage').hidden = true; $('dr').hidden = false;
+  pedir(n); mostrar();
+}
+
+/* ---------- Otro archivo de Drive (visor de Google): se maneja en esta misma ventana ---------- */
+function quitarVisor() { const v = $('visor'); if (v) v.remove(); $('tapa').hidden = false; }
+function visor(m) {
+  if (typeof m.url !== 'string' || !/^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/preview$/.test(m.url)) return;
+  soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
+  const f = document.createElement('iframe'); f.id = 'visor'; f.title = 'Archivo de Drive'; f.src = m.url;
+  $('esc').appendChild(f); $('tapa').hidden = true;      // sin tapa: hay que poder desplazarlo aquí
+}
+
+if (canal) canal.onmessage = e => {
+  const m = e.data || {};
+  if (m.t === 'ping') { decir({ t: 'hola' }); return; }
+  if (m.t === 'cerrar') { window.close(); return; }
+  if (m.t === 'nada') { hay = false; soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
+  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else return;
+  hay = true; $('guia').hidden = true; $('negro').hidden = !m.negro;
+};
+else $('estado').textContent = 'Este navegador no permite conectar las dos ventanas. Usa Chrome o Edge.';
+
+/* ---------- Pantalla completa y teclas ---------- */
+function completa() { if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); }
+$('bFs').onclick = completa;
+document.addEventListener('dblclick', completa);
+document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) $('guia').hidden = true; else if (!hay) $('guia').hidden = false; });
+document.addEventListener('keydown', e => {
+  if (e.key === 'f' || e.key === 'F') { completa(); return; }
+  if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' ', 'Enter', 'Backspace', 'Home', 'End', 'b', 'B', '.'].includes(e.key)) { decir({ t: 'tecla', k: e.key }); e.preventDefault(); }
+});
+let rt = 0;
+document.addEventListener('mousemove', () => { document.body.classList.remove('sinraton'); clearTimeout(rt); rt = setTimeout(() => document.body.classList.add('sinraton'), 2500); });
+window.addEventListener('pagehide', () => decir({ t: 'adios' }));
+decir({ t: 'hola' });
+</script>
+</body>
+</html>

@@ -291,7 +291,7 @@ h2{font-size:16px;margin:0}
       </div>
       <div id="pgrid"></div>
       <div id="paviso"></div>
-      <div class="dim" style="margin-top:16px">Al presentar una lista, ▶ pasa sola a la canción siguiente cuando se acaba la actual, y ⏮ ⏭ saltan de canción. Las listas se guardan en esta computadora.</div>
+      <div class="dim" style="margin-top:16px">Al presentar una lista, ▶ pasa sola a la canción siguiente cuando se acaba la actual, y ⏮ ⏭ saltan de canción. Las listas se guardan para toda la organización: se ven en todos sus equipos.</div>
     </section>
 
     <!-- ================= Crear ================= -->
@@ -494,7 +494,7 @@ function entrar(d) {
   try { const b = JSON.parse(localStorage.getItem(claveBorrador()) || 'null'); if (b && typeof b.letra === 'string') { ed = { id: b.id || null, titulo: b.titulo || '', autor: b.autor || '', letra: b.letra, estilo: estiloDe(b.estilo) }; sucio = !!b.sucio; } } catch (e) { }
   if (ed.id && !D.canciones.some(c => c.id === ed.id)) ed.id = null;      // el borrador era de una canción que ya no existe
   let t = 'lib'; try { t = localStorage.getItem('yl_tab') || 'lib'; } catch (e) { }
-  leerListas();
+  recibirListas(d.reps); subirViejas();
   medirBarra(); llenarForm(); pintarFondos(); libCats(); libRender(); listaRender(); edRender(); setTab(t === 'crear' || t === 'lista' ? t : 'lib');
   if (ed.estilo.bgMode === 'fondo') cargarFondo(ed.estilo.fondo).then(edRender);
   if (window.YLVideos) YLVideos.listar().then(l => { videos = l; pintarFondos(); edRender(); libRender(); }).catch(() => { });
@@ -510,6 +510,7 @@ function setTab(t) {
   document.querySelectorAll('#tabs button').forEach(b => { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   if (cambia) { try { V.entrar(t === 'lib' ? $('#vLib') : t === 'lista' ? $('#vLista') : $('#vCrear')); } catch (e) { } }
   if (t === 'lib' && matchMedia('(min-width:901px)').matches) $('#q').focus();
+  if (t === 'lista' && cambia) refrescarListas();
   window.scrollTo(0, 0);
 }
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
@@ -663,7 +664,7 @@ function libRender() {
       if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint: Google no deja mostrarlo diapositiva por diapositiva, así que se proyecta su letra con el estilo de Yupaletras. Impórtalo para dejarlo guardado con su fondo.'; d.appendChild(tg); }
       if (puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
     }
-    op('＋', 'Agregar a la lista de reproducción', () => aLista(it.tipo === 'c' ? { k: 'c', id: it.c.id, n: it.name } : { k: 'd', id: it.id, t: it.t, n: it.name })).classList.add('mas');
+    if (puedeEditar()) op('＋', 'Agregar a la lista de reproducción', () => aLista(it.tipo === 'c' ? { k: 'c', id: it.c.id, n: it.name } : { k: 'd', id: it.id, t: it.t, n: it.name })).classList.add('mas');      // solo quien puede editar arma listas
     g.appendChild(d);
   }
   $('#lcount').textContent = todos.length ? hallados.length + ' de ' + todos.length : '';
@@ -828,37 +829,69 @@ $('#gGo').onclick = () => {
 
 /* =====================================================================
    LISTA DE REPRODUCCIÓN: varias canciones en el orden en que se van a presentar, para pasarlas de corrido.
-   Se guardan en esta computadora (localStorage), por usuario. Un elemento es
+   Se guardan en la base, por organización: se ven en todos sus equipos. Un elemento es
    { u, k:'c', id, n } canción creada aquí · { u, k:'d', id, t, n } presentación de Drive · { u, k:'v', n } video de esta computadora.
    El archivo de un video no se guarda: vive en «archivos» mientras la página está abierta; después hay que elegirlo otra vez.
    cola = { l, u, tk }: la lista que se está presentando y el elemento que está en pantalla.
    ===================================================================== */
-const claveListas = () => 'yl_listas:' + ((P && (P.usuario || P.email)) || '') + (COMO ? ':como' : '');
-let listas = [], listaId = null, cola = null, colaPend = null;
+const claveU = () => ((P && (P.usuario || P.email)) || '') + (COMO ? ':como' : '');
+let listas = [], listaSel = null, cola = null, colaPend = null;
 const archivos = new Map();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const okItem = x => x && typeof x.u === 'string' && typeof x.n === 'string' && ((x.k === 'c' && typeof x.id === 'string') || (x.k === 'd' && okId(x.id)) || x.k === 'v');
-function leerListas() {
-  listas = []; listaId = null;
-  try {
-    const g = JSON.parse(localStorage.getItem(claveListas()) || 'null');
-    if (g && Array.isArray(g.listas)) {
-      listas = g.listas.filter(l => l && typeof l.id === 'string' && Array.isArray(l.items)).map(l => ({ id: l.id, nombre: String(l.nombre || 'Lista').slice(0, 60),
-        items: l.items.filter(okItem).map(x => ({ u: x.u, k: x.k, id: x.id, t: x.t === 's' ? 's' : 'p', n: x.n.slice(0, 120) })) }));
-      listaId = g.actual;
-    }
-  } catch (e) { }
-  if (!listas.some(l => l.id === listaId)) listaId = listas.length ? listas[0].id : null;
+const deBase = r => ({ id: r.id || null, nombre: String(r.nombre || 'Lista').slice(0, 60), ver: 0,
+  items: (Array.isArray(r.items) ? r.items : []).filter(okItem).map(x => ({ u: x.u, k: x.k, id: x.id, t: x.t === 's' ? 's' : 'p', n: x.n.slice(0, 120) })) });
+const guardarSel = () => { try { if (listaSel && listaSel.id) localStorage.setItem('yl_lista_sel:' + claveU(), listaSel.id); } catch (e) { } };
+// Llegan las listas de la base (al entrar y cada vez que se abre la pestaña): se conserva cuál estaba elegida y cuál se está presentando
+function recibirListas(reps) {
+  let selId = listaSel ? listaSel.id : null; if (!selId) { try { selId = localStorage.getItem('yl_lista_sel:' + claveU()); } catch (e) { } }
+  const colaId = cola ? cola.l.id : null;
+  listas = (Array.isArray(reps) ? reps : []).map(deBase);
+  listaSel = listas.find(l => l.id === selId) || listas[0] || null;
+  if (cola) { const l = listas.find(x => x.id === colaId); if (l && l.items.some(x => x.u === cola.u)) cola.l = l; else cola = null; }
 }
-function guardarListas() { try { localStorage.setItem(claveListas(), JSON.stringify({ actual: listaId, listas })); } catch (e) { } }
-const listaAct = () => listas.find(l => l.id === listaId) || null;
+// Guardar en la base: con un respiro (varios cambios seguidos = un solo envío) y de uno en uno por lista
+function guardarLista(l) {
+  if (!puedeEditar() || l.borrada) return;
+  l.ver++; l.pend = true; clearTimeout(l.tm);
+  l.tm = setTimeout(() => { l.fila = (l.fila || Promise.resolve()).then(() => subirLista(l)); }, 400);
+}
+async function subirLista(l) {
+  if (l.borrada) return;
+  const v = l.ver;
+  try {
+    const r = await rpc('yl_guardar_rep', { p_id: l.id, p_nombre: l.nombre, p_items: l.items.map(x => ({ u: x.u, k: x.k, id: x.id, t: x.t, n: x.n })) });
+    l.id = r.id; if (l.ver === v) l.pend = false; if (listaSel === l) guardarSel();
+  } catch (e) { toast('No se pudo guardar la lista «' + l.nombre + '»: ' + (e.message || 'error')); }
+}
+async function refrescarListas() {      // otra persona pudo armar o cambiar listas desde otro equipo
+  if (listas.some(l => l.pend)) return;
+  try {
+    const r = await rpc('yl_listar_reps', { p_como: COMO || null });
+    if (listas.some(l => l.pend)) return;
+    recibirListas(r); listaRender(); if (pr) pintarCtrl();
+  } catch (e) { }
+}
+// Las listas de la primera versión vivían solo en esta computadora: se suben una vez a la base
+function subirViejas() {
+  if (!puedeEditar()) return;
+  const k = 'yl_listas:' + claveU(); let g = null;
+  try { g = JSON.parse(localStorage.getItem(k) || 'null'); localStorage.removeItem(k); } catch (e) { }
+  if (!g || !Array.isArray(g.listas)) return;
+  for (const v of g.listas) {
+    if (!v || !Array.isArray(v.items) || !v.items.length) continue;
+    const l = deBase({ nombre: v.nombre, items: v.items }); if (!l.items.length) continue;
+    listas.push(l); if (!listaSel) listaSel = l; guardarLista(l);
+  }
+}
+const listaAct = () => listaSel;
 function nuevaLista(nombre) {
-  const l = { id: uid(), nombre: String(nombre || '').trim().slice(0, 60) || 'Lista ' + (listas.length + 1), items: [] };
-  listas.push(l); listaId = l.id; return l;
+  const l = { id: null, ver: 0, nombre: String(nombre || '').trim().slice(0, 60) || 'Lista ' + (listas.length + 1), items: [] };
+  listas.push(l); listaSel = l; guardarLista(l); return l;
 }
 function aLista(item) {
   const l = listaAct() || nuevaLista('Mi lista');
-  l.items.push(Object.assign({ u: uid() }, item)); guardarListas(); listaRender(); if (pr) pintarCtrl();
+  l.items.push(Object.assign({ u: uid() }, item)); guardarLista(l); listaRender(); if (pr) pintarCtrl();
   toast('Agregada a la lista «' + l.nombre + '» (' + l.items.length + ')');
 }
 function subItem(x) {
@@ -869,10 +902,11 @@ function subItem(x) {
 const colaPos = () => cola ? cola.l.items.findIndex(x => x.u === cola.u) : -1;
 function listaRender() {
   const sel = $('#pSel'), l = listaAct(); sel.textContent = '';
-  listas.forEach(x => { const o = el('option', '', x.nombre + ' (' + x.items.length + ')'); o.value = x.id; sel.appendChild(o); });
+  listas.forEach((x, i) => { const o = el('option', '', x.nombre + ' (' + x.items.length + ')'); o.value = String(i); sel.appendChild(o); });
   if (!listas.length) { const o = el('option', '', 'Sin listas todavía'); o.value = ''; sel.appendChild(o); }
-  sel.value = listaId || ''; sel.disabled = listas.length < 2;
-  $('#pRen').hidden = $('#pBorrar').hidden = !l;
+  sel.value = l ? String(listas.indexOf(l)) : ''; sel.disabled = listas.length < 2;
+  const ed_ = puedeEditar();
+  $('#pRen').hidden = $('#pBorrar').hidden = !l || !ed_; $('#pNueva').hidden = $('#pVideo').hidden = !ed_;
   $('#pPlay').disabled = !(l && l.items.length);
   $('#tLista').textContent = l && l.items.length ? ' (' + l.items.length + ')' : '';
   $('#pCount').textContent = l && l.items.length ? (l.items.length === 1 ? '1 elemento' : l.items.length + ' elementos') : '';
@@ -883,42 +917,46 @@ function listaRender() {
     const b = el('button', 'nm', x.n); b.appendChild(el('small', '', subItem(x)));
     b.title = 'Presentar la lista desde aquí'; b.onclick = () => colaIr(l, i); d.appendChild(b);
     const op = (txt, tip, fn, dis) => { const o = el('button', 'op', txt); o.title = tip; o.setAttribute('aria-label', tip); o.disabled = !!dis; o.onclick = fn; d.appendChild(o); };
-    op('↑', 'Subir', () => listaMover(l, i, -1), i === 0);
-    op('↓', 'Bajar', () => listaMover(l, i, 1), i === l.items.length - 1);
-    op('✕', 'Quitar de la lista', () => { if (cola && cola.l === l && cola.u === x.u) cola = null; archivos.delete(x.u); l.items.splice(i, 1); guardarListas(); listaRender(); if (pr) pintarCtrl(); });
+    if (ed_) {
+      op('↑', 'Subir', () => listaMover(l, i, -1), i === 0);
+      op('↓', 'Bajar', () => listaMover(l, i, 1), i === l.items.length - 1);
+      op('✕', 'Quitar de la lista', () => { if (cola && cola.l === l && cola.u === x.u) cola = null; archivos.delete(x.u); l.items.splice(i, 1); guardarLista(l); listaRender(); if (pr) pintarCtrl(); });
+    }
     g.appendChild(d);
   });
   const av = $('#paviso'); av.textContent = '';
   if (!l || !l.items.length) {
     const v = el('div', 'vacio'); v.appendChild(el('b', '', l ? 'La lista «' + l.nombre + '» está vacía' : 'Todavía no hay listas'));
-    v.appendChild(document.createTextNode('En la Biblioteca, presiona ＋ junto a cada canción para agregarla aquí, en el orden en que se van a cantar.'));
+    v.appendChild(document.createTextNode(ed_ ? 'En la Biblioteca, presiona ＋ junto a cada canción para agregarla aquí, en el orden en que se van a cantar.' : 'Aquí aparecerán las listas que arme la organización.'));
     const b = el('button', 'bt pri', 'Ir a la Biblioteca'); b.style.marginTop = '12px'; b.onclick = () => setTab('lib'); v.appendChild(el('br')); v.appendChild(b);
     av.appendChild(v);
   }
 }
 function listaMover(l, i, d) {
   const j = i + d; if (j < 0 || j >= l.items.length) return;
-  [l.items[i], l.items[j]] = [l.items[j], l.items[i]]; guardarListas(); listaRender(); if (pr) pintarCtrl();
+  [l.items[i], l.items[j]] = [l.items[j], l.items[i]]; guardarLista(l); listaRender(); if (pr) pintarCtrl();
 }
-$('#pSel').onchange = e => { listaId = e.target.value || null; guardarListas(); listaRender(); };
+$('#pSel').onchange = e => { listaSel = listas[+e.target.value] || listaSel; guardarSel(); listaRender(); };
 $('#pNueva').onclick = () => {
   const n = prompt('Nombre de la lista (por ejemplo, «Domingo» o «Culto de jóvenes»):', 'Lista ' + (listas.length + 1));
   if (n === null) return;
-  nuevaLista(n); guardarListas(); listaRender();
+  nuevaLista(n); listaRender();
 };
 $('#pRen').onclick = () => {
   const l = listaAct(); if (!l) return;
   const n = prompt('Nuevo nombre de la lista:', l.nombre);
   if (n === null || !n.trim()) return;
-  l.nombre = n.trim().slice(0, 60); guardarListas(); listaRender(); if (pr) pintarCtrl();
+  l.nombre = n.trim().slice(0, 60); guardarLista(l); listaRender(); if (pr) pintarCtrl();
 };
 $('#pBorrar').onclick = () => {
   const l = listaAct(); if (!l) return;
-  if (!confirm('¿Eliminar la lista «' + l.nombre + '»? Las canciones no se borran de la biblioteca.')) return;
+  if (!confirm('¿Eliminar la lista «' + l.nombre + '» para toda la organización? Las canciones no se borran de la biblioteca.')) return;
   if (cola && cola.l === l) cola = null;
   l.items.forEach(x => archivos.delete(x.u));
-  listas = listas.filter(x => x !== l); listaId = listas.length ? listas[0].id : null;
-  guardarListas(); listaRender(); if (pr) pintarCtrl();
+  l.borrada = true; l.pend = false; clearTimeout(l.tm);      // espera a que termine lo que se estuviera guardando y la borra de la base
+  l.fila = (l.fila || Promise.resolve()).then(() => l.id ? rpc('yl_borrar_rep', { p_id: l.id }) : null).catch(e => toast('No se pudo eliminar la lista: ' + (e.message || 'error')));
+  listas = listas.filter(x => x !== l); listaSel = listas[0] || null;
+  guardarSel(); listaRender(); if (pr) pintarCtrl();
 };
 $('#pPlay').onclick = () => { const l = listaAct(); if (l && l.items.length) colaIr(l, 0); };
 // Pone en pantalla el elemento i de la lista. alFinal: llega retrocediendo, así que entra por su última diapositiva.
@@ -954,7 +992,7 @@ $('#fPv').addEventListener('change', e => {
 $('#bVideo').onclick = () => { if (asegurarPantalla()) elegirVideo(a => proyectarVideo(a)); };
 $('#pVideo').onclick = () => elegirVideo(a => {
   const l = listaAct() || nuevaLista('Mi lista'), x = { u: uid(), k: 'v', n: nombreVideo(a) };
-  archivos.set(x.u, a); l.items.push(x); guardarListas(); listaRender(); if (pr) pintarCtrl();
+  archivos.set(x.u, a); l.items.push(x); guardarLista(l); listaRender(); if (pr) pintarCtrl();
   toast('Video agregado a la lista «' + l.nombre + '» (' + l.items.length + ')');
 });
 
@@ -1428,7 +1466,7 @@ window.addEventListener('resize', medirBarra);
 $('#gLogo').innerHTML = isotipo(46); $('#logo').innerHTML = isotipo(24);
 pintarTema();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
-window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio, pr, viva, videos, listas, listaId, cola: cola ? { lista: cola.l.id, pos: colaPos() } : null }), setTab };
+window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio, pr, viva, videos, listas, listaId: listaSel && listaSel.id, cola: cola ? { lista: cola.l.id, pos: colaPos() } : null }), setTab };
 comprobar();
 </script>
 </body>

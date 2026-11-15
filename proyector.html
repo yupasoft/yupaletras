@@ -19,8 +19,11 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
 .slide .tx{white-space:pre;line-height:1.25;font-size:calc(var(--fs) * 0.078125cqw)}
 .slide .au{margin-top:2cqw;opacity:.85;font-weight:400}
 /* El fondo va en el marco, que no se vuelve a crear al cambiar de diapositiva: así un fondo con movimiento no se reinicia */
-#stage{background:var(--sbg,#000)}
-#stage .slide{background:transparent}
+#stage{position:relative;background:var(--sbg,#000)}
+#stage .slide{position:relative;z-index:2;background:transparent}
+/* Video de fondo (de este equipo): queda puesto mientras cambian las diapositivas */
+#stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#stage .osc{position:absolute;inset:0;z-index:1}
 #dr{position:absolute;inset:0}
 #dr iframe{position:absolute;inset:0;width:100%;height:100%;border:0;opacity:0;z-index:1;background:#000}
 #dr iframe.on{opacity:1;z-index:2}
@@ -53,6 +56,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
     <small id="estado">Esperando a Yupaletras…</small>
   </div></div>
 </div>
+<script src="videos.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -62,8 +66,30 @@ let hay = false;      // hay algo en pantalla
 
 /* ---------- Canción (el control manda el texto y el estilo ya calculados) ---------- */
 const VARS = ['--sbg', '--stx', '--sff', '--sfw', '--sal', '--ssh'];
+/* Video de fondo: se lee del almacén de este equipo. Si no está, queda el fondo normal (un cuadro del video o el color). */
+let vidId = null, vidUrl = null;
+function quitarVideo() {
+  vidId = null; $('stage').querySelectorAll('video,.osc').forEach(x => x.remove());
+  if (vidUrl) { URL.revokeObjectURL(vidUrl); vidUrl = null; }
+}
+function ponerVideo(v) {
+  if (!v || !v.id || !window.YLVideos) { quitarVideo(); return; }
+  const osc = Math.max(0, Math.min(0.85, +v.osc || 0));
+  if (vidId === v.id) { const o = $('stage').querySelector('.osc'); if (o) o.style.background = 'rgba(0,0,0,' + osc + ')'; return; }
+  quitarVideo(); vidId = v.id;
+  YLVideos.archivo(v.id).then(b => {
+    if (vidId !== v.id || !b) return;
+    const st = $('stage'), e = document.createElement('video'), o = document.createElement('div');
+    e.muted = true; e.loop = true; e.autoplay = true; e.playsInline = true; e.setAttribute('tabindex', '-1');
+    vidUrl = URL.createObjectURL(b); e.src = vidUrl;
+    o.className = 'osc'; o.style.background = 'rgba(0,0,0,' + osc + ')';
+    st.insertBefore(o, st.firstChild); st.insertBefore(e, st.firstChild);
+    const p = e.play(); if (p && p.catch) p.catch(() => { });
+  }).catch(() => { });
+}
 function cancion(m) {
-  const st = $('stage'); st.textContent = '';
+  const st = $('stage'); st.querySelectorAll('.slide').forEach(x => x.remove());
+  ponerVideo(m.video);
   VARS.forEach(k => { if (m.vars && typeof m.vars[k] === 'string') st.style.setProperty(k, m.vars[k]); });
   const d = document.createElement('div'); d.className = 'slide';
   for (const p of (m.partes || [])) {
@@ -96,6 +122,7 @@ function mostrar() {
 }
 function drive(m) {
   if (!esDocs(m.base)) return;
+  quitarVideo();
   const n = Math.max(1, Math.floor(+m.n || 1));
   if (!dv || dv.base !== m.base) { soltarDrive(); dv = { base: m.base, n, total: 0 }; }
   dv.n = n; dv.total = Math.floor(+m.total || 0);
@@ -107,7 +134,7 @@ function drive(m) {
 function quitarVisor() { const v = $('visor'); if (v) v.remove(); $('tapa').hidden = false; }
 function visor(m) {
   if (typeof m.url !== 'string' || !/^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/preview$/.test(m.url)) return;
-  soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
+  quitarVideo(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
   const f = document.createElement('iframe'); f.id = 'visor'; f.title = 'Archivo de Drive'; f.src = m.url;
   $('esc').appendChild(f); $('tapa').hidden = true;      // sin tapa: hay que poder desplazarlo aquí
 }
@@ -116,7 +143,7 @@ if (canal) canal.onmessage = e => {
   const m = e.data || {};
   if (m.t === 'ping') { decir({ t: 'hola' }); return; }
   if (m.t === 'cerrar') { window.close(); return; }
-  if (m.t === 'nada') { hay = false; soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
+  if (m.t === 'nada') { hay = false; quitarVideo(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
   if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else return;
   hay = true; $('guia').hidden = true; $('negro').hidden = !m.negro;
 };

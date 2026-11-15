@@ -106,6 +106,7 @@ h2{font-size:16px;margin:0}
 .fondos .fo{position:relative;aspect-ratio:16/9;border:2px solid var(--bd);border-radius:8px;background:var(--bg) center/cover no-repeat;padding:0;overflow:hidden;color:var(--mute);font-size:12px;font-weight:600}
 .fondos .fo.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
 .fondos .fo.mas{border-style:dashed}
+.fondos .fo.vid::after{content:"▶";position:absolute;left:5px;bottom:4px;font-size:11px;color:#fff;text-shadow:0 1px 3px #000}
 .fondos .qx{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(12,26,46,.8);color:#fff;font-size:11px;line-height:1;padding:0}
 #grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:14px}
 .dp{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
@@ -271,6 +272,10 @@ h2{font-size:16px;margin:0}
           <div class="campo"><span class="lb">Tus fondos (imágenes que subes)</span></div>
           <div class="fondos" id="fondos"></div>
           <input type="file" id="fFile" accept="image/*" hidden>
+          <div class="campo"><span class="lb">Videos de este equipo</span></div>
+          <div class="fondos" id="videos"></div>
+          <input type="file" id="fVid" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" hidden>
+          <div class="dim" id="vNota" style="margin-top:6px">Los videos se guardan solo en esta computadora: no se suben ni aparecen en otros equipos. Usa videos que tu iglesia tenga permiso de usar.</div>
           <div class="campo" id="cOsc"><label for="fOsc">Oscurecer la imagen</label><input id="fOsc" type="range" data-e="overlay" min="0" max="85"></div>
 
           <h2>Texto</h2>
@@ -311,6 +316,7 @@ h2{font-size:16px;margin:0}
 
 <script src="../portal/vivo.js"></script>
 <script src="fondos.js"></script>
+<script src="videos.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -332,7 +338,7 @@ const SINPERMISO = 'No tienes permiso para hacer eso. Pídeselo al Responsable d
 let ses = null, P = null, acceso = 'ver', tab = 'lib';
 let D = { carpeta: null, lista: [], lista_el: null, lista_por: null, canciones: [], fondos: [] };
 const EST0 = { maxLines: 6, hideLabels: true, titleSlide: true, endBlank: true, font: 'Arial', bold: true, upper: false, shadow: true,
-  align: 'center', size: 96, textColor: '#ffffff', bgMode: 'color', c1: '#000000', c2: '#000000', fondo: null, escena: null, mov: true, overlay: 40 };
+  align: 'center', size: 96, textColor: '#ffffff', bgMode: 'color', c1: '#000000', c2: '#000000', fondo: null, escena: null, mov: true, video: null, videoNombre: null, overlay: 40 };
 const estiloDe = e => Object.assign({}, EST0, e && typeof e === 'object' ? e : {});
 let ed = { id: null, titulo: '', autor: '', letra: '', estilo: estiloDe() }, sucio = false;
 const puedeEditar = () => acceso === 'total' || acceso === 'editar';
@@ -440,6 +446,7 @@ function entrar(d) {
   let t = 'lib'; try { t = localStorage.getItem('yl_tab') || 'lib'; } catch (e) { }
   medirBarra(); llenarForm(); pintarFondos(); libCats(); libRender(); edRender(); setTab(t === 'crear' ? 'crear' : 'lib');
   if (ed.estilo.bgMode === 'fondo') cargarFondo(ed.estilo.fondo).then(edRender);
+  if (window.YLVideos) YLVideos.listar().then(l => { videos = l; pintarFondos(); edRender(); libRender(); }).catch(() => { });
 }
 
 /* ---------- Tema y pestañas ---------- */
@@ -524,10 +531,14 @@ function cargarFondo(id) {
   if (!fondoPide.has(id)) fondoPide.set(id, rpc('yl_fondo', { p_id: id, p_como: COMO || null }).then(img => { if (JPEG(img)) fondoImg.set(id, img); }).catch(() => { }).finally(() => fondoPide.delete(id)));
   return fondoPide.get(id);
 }
+// Videos de fondo: viven solo en este equipo (videos.js). videos = sus fichas, con una imagen de un cuadro (poster).
+let videos = [];
+const videoDe = E => E.bgMode === 'video' && E.video ? videos.find(v => v.id === E.video) || null : null;
+const posterDe = E => { const v = videoDe(E); return v && JPEG(v.poster) ? v.poster : null; };
 // Fondos incluidos (fondos.js): quietos en las miniaturas, PowerPoint y PDF; con movimiento solo en la pantalla de proyección
 const escenaDe = (E, mover) => E.bgMode === 'escena' && window.YLFondos && YLFondos.tiene(E.escena) ? YLFondos.uri(E.escena, !!(mover && E.mov)) : null;
 function bgCss(E, mover) {
-  const img = escenaDe(E, mover) || imagenDe(E);
+  const img = escenaDe(E, mover) || posterDe(E) || imagenDe(E);
   if (img) { const o = Math.max(0, Math.min(85, +E.overlay || 0)) / 100; return 'linear-gradient(rgba(0,0,0,' + o + '),rgba(0,0,0,' + o + ')),url("' + img + '") center/cover no-repeat'; }
   if (E.bgMode === 'gradient') return 'linear-gradient(135deg,' + HEX(E.c1) + ',' + HEX(E.c2) + ')';
   return HEX(E.c1);
@@ -773,7 +784,7 @@ function llenarForm() {
   document.querySelectorAll('[data-e]').forEach(i => { const v = ed.estilo[i.dataset.e]; if (i.type === 'checkbox') i.checked = !!v; else i.value = v; });
   $('#fBg').value = HEX(ed.estilo.c1);
   const ro = !puedeEditar();
-  document.querySelectorAll('#vCrear aside input, #vCrear aside select, #vCrear aside textarea').forEach(i => { if (i.id !== 'fFile') i.disabled = ro; });
+  document.querySelectorAll('#vCrear aside input, #vCrear aside select, #vCrear aside textarea').forEach(i => { if (i.id !== 'fFile' && i.id !== 'fVid') i.disabled = ro; });
 }
 document.querySelectorAll('[data-c]').forEach(i => i.addEventListener('input', () => { ed[i.dataset.c] = i.value; sucio = true; edRender(); }));
 document.querySelectorAll('[data-e]').forEach(i => i.addEventListener('input', () => {
@@ -793,9 +804,24 @@ function pintarFondos() {
   for (const e of (window.YLFondos ? YLFondos.lista : [])) {
     const b = el('button', 'fo' + (ed.estilo.bgMode === 'escena' && ed.estilo.escena === e.id ? ' on' : ''));
     b.title = e.nombre; b.setAttribute('aria-label', 'Fondo ' + e.nombre); b.style.backgroundImage = 'url("' + YLFondos.uri(e.id, false) + '")';
-    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'escena', escena: e.id, fondo: null }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); };
+    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'escena', escena: e.id, fondo: null, video: null, videoNombre: null }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); };
     es.appendChild(b);
   }
+  const vg = $('#videos'); vg.textContent = '';
+  for (const v of videos) {
+    const b = el('button', 'fo vid' + (ed.estilo.bgMode === 'video' && ed.estilo.video === v.id ? ' on' : ''));
+    b.title = v.nombre + ' · ' + (v.tam / 1048576).toFixed(1) + ' MB'; b.setAttribute('aria-label', 'Video ' + v.nombre);
+    if (JPEG(v.mini)) b.style.backgroundImage = 'url("' + v.mini + '")';
+    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'video', video: v.id, videoNombre: v.nombre, fondo: null, escena: null }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); };
+    if (puedeEditar()) { const q = el('button', 'qx', '✕'); q.title = 'Quitar este video de este equipo'; q.setAttribute('aria-label', 'Quitar el video ' + v.nombre); q.onclick = e => { e.stopPropagation(); borrarVideo(v); }; b.appendChild(q); }
+    vg.appendChild(b);
+  }
+  if (!window.YLVideos) vg.appendChild(el('div', 'dim', 'No disponible en este navegador.'));
+  else if (puedeEditar()) { const m = el('button', 'fo mas', '＋ Agregar'); m.title = 'Elegir un video (MP4) de esta computadora'; m.onclick = () => $('#fVid').click(); vg.appendChild(m); }
+  // La canción puede venir de otro equipo donde sí estaba el video
+  $('#vNota').textContent = ed.estilo.bgMode === 'video' && !videoDe(ed.estilo)
+    ? 'Esta canción usa el video «' + (ed.estilo.videoNombre || 'sin nombre') + '», que no está en esta computadora: aquí se verá con su color de fondo. Agrégalo de nuevo o elige otro fondo.'
+    : 'Los videos se guardan solo en esta computadora: no se suben ni aparecen en otros equipos. Usa videos que tu iglesia tenga permiso de usar.';
   const g = $('#fondos'); g.textContent = '';
   for (const f of D.fondos) {
     const b = el('button', 'fo' + (ed.estilo.bgMode === 'fondo' && ed.estilo.fondo === f.id ? ' on' : ''));
@@ -807,12 +833,12 @@ function pintarFondos() {
   }
   if (puedeEditar()) { const m = el('button', 'fo mas', '＋ Agregar'); m.title = 'Subir una imagen a la biblioteca de fondos'; m.onclick = () => $('#fFile').click(); g.appendChild(m); }
   else if (!D.fondos.length) g.appendChild(el('div', 'dim', 'Sin fondos todavía.'));
-  $('#cOsc').hidden = ed.estilo.bgMode !== 'fondo' && ed.estilo.bgMode !== 'escena';
+  $('#cOsc').hidden = !['fondo', 'escena', 'video'].includes(ed.estilo.bgMode);
   $('#cMov').hidden = ed.estilo.bgMode !== 'escena';
 }
 function reducir(im, w, h, q) {      // recorta al centro en 16:9 y devuelve JPEG
   const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const k = Math.max(w / im.width, h / im.height), W = im.width * k, H = im.height * k;
+  const iw = im.videoWidth || im.width, ih = im.videoHeight || im.height, k = Math.max(w / iw, h / ih), W = iw * k, H = ih * k;
   c.getContext('2d').drawImage(im, (w - W) / 2, (h - H) / 2, W, H);
   return c.toDataURL('image/jpeg', q);
 }
@@ -835,6 +861,37 @@ $('#fFile').addEventListener('change', e => {
   };
   im.src = url;
 });
+/* Videos de fondo de este equipo */
+function cuadroDe(archivo) {      // abre el video y saca un cuadro (poster 1280×720 y miniatura)
+  return new Promise((ok, mal) => {
+    const u = URL.createObjectURL(archivo), v = document.createElement('video'); let hecho = false;
+    const fin = (f, x) => { if (hecho) return; hecho = true; clearTimeout(t); URL.revokeObjectURL(u); f(x); };
+    const sacar = () => { try { if (!v.videoWidth) throw new Error('vacío'); fin(ok, { poster: reducir(v, 1280, 720, 0.8), mini: reducir(v, 320, 180, 0.6) }); } catch (e) { fin(mal, new Error('No se pudo leer ese video.')); } };
+    const t = setTimeout(() => fin(mal, new Error('No se pudo leer ese video.')), 20000);
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onerror = () => fin(mal, new Error('Este navegador no puede reproducir ese video. Usa un MP4 (H.264).'));
+    v.onseeked = sacar;
+    v.onloadeddata = () => { const d = v.duration; if (isFinite(d) && d > 0.4) v.currentTime = Math.min(1, d / 2); else sacar(); };
+    v.src = u;
+  });
+}
+$('#fVid').addEventListener('change', async e => {
+  const archivo = e.target.files[0]; e.target.value = ''; if (!archivo || !window.YLVideos) return;
+  if (archivo.size > 400 * 1048576) { toast('Ese video pesa más de 400 MB. Usa uno más liviano (un fondo en bucle suele pesar 5 a 50 MB).'); return; }
+  await ocupado($('#videos .mas'), 'Guardando…', async () => {
+    const c = await cuadroDe(archivo);
+    const v = await YLVideos.guardar(archivo, { nombre: (archivo.name || 'Video').replace(/\.[a-z0-9]+$/i, '').slice(0, 60) || 'Video', poster: c.poster, mini: c.mini });
+    videos.push(v);
+    Object.assign(ed.estilo, { bgMode: 'video', video: v.id, videoNombre: v.nombre, fondo: null, escena: null }); sucio = true;
+    llenarForm(); pintarFondos(); edRender(); toast('Video guardado en esta computadora');
+  });
+});
+async function borrarVideo(v) {
+  if (!confirm('¿Quitar el video «' + v.nombre + '» de esta computadora? Las canciones que lo usan se verán con su color de fondo.')) return;
+  try { await YLVideos.borrar(v.id); } catch (e) { toast('No se pudo quitar el video'); return; }
+  videos = videos.filter(x => x.id !== v.id);
+  pintarFondos(); edRender(); if (pr) { enviar(); pintarCtrl(); } toast('Video quitado de esta computadora');
+}
 async function borrarFondo(f, boton) {
   if (!confirm('¿Eliminar el fondo «' + f.nombre + '» de la biblioteca? Las canciones que lo usan se verán con su color de respaldo.')) return;
   await ocupado(boton, '…', async () => {
@@ -959,7 +1016,8 @@ function varsDe(E) {
 }
 function enviar() {      // manda a la pantalla el estado completo (sirve también si la pantalla se abre o recarga después)
   if (!pr) { decir({ t: 'nada' }); return; }
-  if (pr.tipo === 'cancion') decir({ t: 'cancion', vars: varsDe(pr.S.estilo), partes: partesDe(pr.S, pr.deck[pr.i]), negro: pr.negro });
+  if (pr.tipo === 'cancion') { const v = videoDe(pr.S.estilo); decir({ t: 'cancion', vars: varsDe(pr.S.estilo), partes: partesDe(pr.S, pr.deck[pr.i]), negro: pr.negro,
+    video: v ? { id: v.id, osc: Math.max(0, Math.min(85, +pr.S.estilo.overlay || 0)) / 100 } : null }); }
   else if (pr.tipo === 'drive') decir({ t: 'drive', base: pr.base, n: pr.i + 1, total: pr.total || 0, negro: pr.negro });
   else decir({ t: 'visor', url: pr.url, negro: pr.negro });
 }
@@ -1068,7 +1126,7 @@ function cargarPptx() {
 }
 const hex = c => HEX(c).replace('#', '').toUpperCase();
 function pptxBg(E) {
-  const img = escenaDe(E, false) || (E.bgMode === 'fondo' ? imagenDe(E) : null);
+  const img = escenaDe(E, false) || posterDe(E) || (E.bgMode === 'fondo' ? imagenDe(E) : null);
   if (!img && E.bgMode !== 'gradient') return Promise.resolve({ color: hex(E.c1) });
   const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; const g = c.getContext('2d');
   const listo = () => ({ data: c.toDataURL('image/jpeg', 0.88).replace(/^data:/, '') });
@@ -1114,7 +1172,7 @@ window.addEventListener('resize', medirBarra);
 $('#gLogo').innerHTML = isotipo(46); $('#logo').innerHTML = isotipo(24);
 pintarTema();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
-window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio, pr, viva }), setTab };
+window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio, pr, viva, videos }), setTab };
 comprobar();
 </script>
 </body>

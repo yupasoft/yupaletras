@@ -1,0 +1,895 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Yupaletras · Yupasoft</title>
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0C1A2E">
+<script>try{if(localStorage.getItem("yp_tema")==="claro"){document.documentElement.setAttribute("data-tema","claro");document.querySelector('meta[name=theme-color]').content="#F4F7FA"}}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Marca Yupasoft: Tinta #0C1A2E, Turquesa #2ED3B7, Ámbar #F2A93B. Oscuro por defecto; claro solo si se elige. */
+:root{--acc:#2ED3B7;--acc-tx:#0C1A2E;--amb:#F2A93B;--mal:#FF7A70;--bg:#0C1A2E;--card:#152741;--card2:#1B3050;--tx:#F4F7FA;--bd:#243B58;--mute:#9BB0C9;--sombra:0 10px 30px rgba(0,0,0,.35)}
+:root[data-tema="claro"]{--acc:#12806E;--acc-tx:#fff;--amb:#A8650A;--mal:#C0392B;--bg:#F4F7FA;--card:#fff;--card2:#EEF3F8;--tx:#0C1A2E;--bd:#D9E2EC;--mute:#566B82;--sombra:0 8px 24px rgba(12,26,46,.10)}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+html{scroll-padding-top:calc(var(--bh,100px) + 70px)}
+body{margin:0;font:15px/1.45 'Sora',system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+.rot{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.dim{color:var(--mute);font-size:13px}
+
+/* Entrada */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate .caja{width:min(420px,100%);background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:28px;text-align:center}
+.gate h2{margin:14px 0 8px;font-size:19px}.gate p{margin:0 0 18px;color:var(--mute)}
+.gate .bts{display:flex;flex-direction:column;gap:8px}
+.gate a,.gate button{display:block;width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:var(--tx);text-decoration:none;text-align:center}
+.gate .pri{background:var(--acc);color:var(--acc-tx);border-color:var(--acc);font-weight:700}
+
+/* Barra superior */
+.barra{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--bd)}
+.barra-in{padding:10px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;letter-spacing:-.01em;margin-right:auto}
+.marca svg{width:24px;height:24px;flex:none}
+.marca small{display:block;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 14px;border:1px solid var(--bd);border-radius:10px;background:transparent;color:var(--tx);font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+.bt:hover{border-color:var(--acc)}
+.bt.pri{background:var(--acc);border-color:var(--acc);color:var(--acc-tx);font-weight:700}
+.bt.peq{min-height:34px;padding:5px 10px;font-size:13px}
+.bt.mal{color:var(--mal)}
+.bt:disabled{opacity:.5;cursor:default}
+.ico{width:40px;padding:0}
+.tabs{padding:0 24px;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{border:0;background:transparent;padding:10px 12px;font-weight:600;font-size:14px;color:var(--mute);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-current="page"]{color:var(--tx);border-bottom-color:var(--acc)}
+.cinta{background:var(--amb);color:#0C1A2E;text-align:center;font-weight:700;font-size:13px;padding:6px 12px}
+main{padding:18px 28px 96px}
+.fila{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fila .sep{margin-left:auto}
+h1{font-size:22px;margin:0;letter-spacing:-.02em}
+h2{font-size:16px;margin:0}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px}
+.vacio{border:1px dashed var(--bd);border-radius:14px;padding:26px 18px;text-align:center;color:var(--mute);margin-top:14px}
+.vacio b{display:block;color:var(--tx);margin-bottom:4px}
+.campo{display:flex;flex-direction:column;gap:5px;min-width:0;margin-top:10px}
+.campo label,.campo .lb{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--mute)}
+.campo input,.campo select,.campo textarea{width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:16px}
+.campo input:focus,.campo select:focus,.campo textarea:focus,.busca:focus{outline:2px solid var(--acc);border-color:transparent}
+.campo select option{background:var(--card);color:var(--tx)}
+.campo input[type=color]{padding:3px;min-height:44px}
+.campo input[type=range]{min-height:30px;padding:0;border:0;background:transparent;accent-color:var(--acc)}
+.campo textarea{min-height:260px;resize:vertical;line-height:1.5;font-size:15px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.marcar{display:flex;align-items:center;gap:9px;margin-top:10px;font-size:14px;cursor:pointer}
+.marcar input{width:18px;height:18px;margin:0;accent-color:var(--acc)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:80;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:var(--sombra);max-width:calc(100vw - 32px);text-align:center}
+.busca{min-height:48px;padding:10px 14px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);min-width:0;font-size:18px}
+.sel{min-height:48px;padding:8px 10px;border:1px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx);max-width:100%}
+.sel option{background:var(--card);color:var(--tx)}
+
+/* Biblioteca */
+.lbar .busca{flex:1 1 300px}
+.lbar .sel{flex:0 1 250px}
+#lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:8px;margin-top:14px}
+.pz{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden;min-height:52px}
+.pz:hover{border-color:var(--acc)}
+.pz button{background:none;border:0}
+.pz .nm{flex:1;min-width:0;text-align:left;padding:9px 12px;font-weight:600;font-size:14.5px}
+.pz .nm small{display:block;color:var(--mute);font:500 11px 'IBM Plex Mono',monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pz .tg{align-self:center;font:500 10px 'IBM Plex Mono',monospace;color:var(--mute);border:1px solid var(--bd);border-radius:5px;padding:1px 5px;margin-right:6px}
+.pz .tg.mia{color:var(--acc);border-color:var(--acc)}
+.pz .op{flex:none;width:42px;color:var(--mute);border-left:1px solid var(--bd);font-size:15px}
+.pz .op:hover{color:var(--acc)}
+.pie{margin-top:22px;padding-top:14px;border-top:1px solid var(--bd)}
+.pie .fila{margin-top:10px}
+.pie .busca{flex:1 1 280px;max-width:640px;font-size:15px;min-height:42px}
+
+/* Crear */
+.crear{display:grid;grid-template-columns:400px minmax(0,1fr);gap:20px;align-items:start}
+/* Guardar y Presentar siempre a la mano, aunque se baje por el formulario */
+.acciones{position:sticky;top:var(--bh,100px);z-index:10;background:var(--bg);padding:10px 0;margin-top:-10px}
+.crear aside h2{margin-top:20px;padding-top:16px;border-top:1px solid var(--bd)}
+.presets{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px}
+.presets button{height:38px;border:1px solid var(--bd);border-radius:8px;font-weight:700;font-size:13px}
+.fondos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.fondos .fo{position:relative;aspect-ratio:16/9;border:2px solid var(--bd);border-radius:8px;background:var(--bg) center/cover no-repeat;padding:0;overflow:hidden;color:var(--mute);font-size:12px;font-weight:600}
+.fondos .fo.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}
+.fondos .fo.mas{border-style:dashed}
+.fondos .qx{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(12,26,46,.8);color:#fff;font-size:11px;line-height:1;padding:0}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:14px}
+.dp{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.dp .frame{cursor:pointer}
+.dpb{display:flex;align-items:center;gap:4px;padding:5px 8px;font:500 12px 'IBM Plex Mono',monospace;color:var(--mute)}
+.dpb span{margin-right:auto}
+.dpb button{min-width:30px;height:28px;border:1px solid var(--bd);border-radius:6px;background:transparent;font-size:13px}
+.dpb button:hover{border-color:var(--acc)}
+.dpb button:disabled{opacity:.35;cursor:default}
+
+/* Diapositiva: todo en unidades relativas al ancho del marco (base 1280×720) */
+.frame{container-type:inline-size;aspect-ratio:16/9;width:100%;overflow:hidden}
+.slide{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:4.5cqw 6cqw;overflow:hidden;
+  background:var(--sbg,#000);color:var(--stx,#fff);font-family:var(--sff,Arial),Arial,sans-serif;font-weight:var(--sfw,700);text-align:var(--sal,center);text-shadow:var(--ssh,none)}
+.slide .tx{white-space:pre;line-height:1.25;font-size:calc(var(--fs) * 0.078125cqw)}
+.slide .au{margin-top:2cqw;opacity:.85;font-weight:400}
+
+/* Proyección */
+#show,#gshow{position:fixed;inset:0;background:#000;z-index:60;display:flex;align-items:center;justify-content:center}
+#show .frame{width:min(100vw,177.78vh)}
+#show.quieto{cursor:none}
+#num{position:absolute;right:14px;bottom:10px;color:#fff;opacity:.35;font:500 13px 'IBM Plex Mono',monospace}
+#show.quieto #num{opacity:0}
+#salir,#gclose{position:absolute;top:10px;right:10px;z-index:2;min-height:38px;padding:6px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;font-weight:600;opacity:.3}
+#salir:hover,#gclose:hover{opacity:1}
+#show.quieto #salir{opacity:0}
+#gshow iframe{width:100%;height:100%;border:0}
+#print{display:none}
+
+/* Ventana */
+.velo{position:fixed;inset:0;z-index:70;background:rgba(5,12,22,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.velo .card{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;box-shadow:var(--sombra)}
+.velo .fila{margin-top:16px;justify-content:flex-end}
+
+@media (max-width:900px){
+  .crear{grid-template-columns:minmax(0,1fr)}
+  .acciones{position:fixed;top:auto;left:0;right:0;bottom:0;z-index:30;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--bd);flex-wrap:nowrap;overflow-x:auto}
+  .acciones #count{display:none}
+  .acciones .bt{flex:none}
+  .toast{bottom:84px}
+}
+@media (max-width:640px){
+  .barra-in{padding:10px 14px}.tabs{padding:0 8px}
+  main{padding:14px 14px 96px}
+  .solo-pc{display:none!important}
+  .bt{min-height:44px}
+  .lbar .busca,.lbar .sel{flex:1 1 100%}
+  #lgrid{grid-template-columns:minmax(0,1fr)}
+  .pz{min-height:56px}.pz .op{width:48px}
+  .toast{bottom:76px}
+}
+@page{size:1280px 720px;margin:0}
+@media print{
+  html,body{background:#fff}
+  #app,#gate,#show,#gshow,#modal,.toast,.vv-fondo{display:none!important}
+  #print{display:block}
+  #print .frame{width:1280px;height:720px;break-after:page}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+<link rel="stylesheet" href="../portal/vivo.css">
+</head>
+<body>
+<div class="gate" id="gate"><div class="caja">
+  <div id="gLogo"></div>
+  <h2 id="gT">Comprobando tu cuenta…</h2>
+  <p id="gM">Un momento.</p>
+  <div class="bts" id="gB"></div>
+</div></div>
+
+<div id="app" hidden>
+  <div class="cinta" id="cinta" hidden></div>
+  <header class="barra">
+    <div class="barra-in">
+      <div class="marca"><span id="logo"></span><span>Yupaletras<small id="quien"></small></span></div>
+      <button class="bt peq ico" id="bTema" aria-label="Cambiar tema" title="Cambiar tema">☀</button>
+      <a class="bt peq" href="../portal/?menu=1" title="Mis herramientas">←<span class="solo-pc"> Mis herramientas</span></a>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Secciones">
+      <button data-tab="lib">Biblioteca</button>
+      <button data-tab="crear">Crear diapositivas</button>
+    </nav>
+  </header>
+  <main>
+    <!-- ================= Biblioteca ================= -->
+    <section id="vLib" hidden>
+      <div class="fila lbar">
+        <input class="busca" type="search" id="q" placeholder="Buscar canción…" autocomplete="off">
+        <select class="sel" id="cat" aria-label="Carpeta"></select>
+        <span class="dim" id="lcount"></span>
+        <button class="bt" id="bAct" title="Vuelve a leer la carpeta de Drive">↻ Actualizar</button>
+        <button class="bt" id="bCarp">Carpeta de Drive</button>
+      </div>
+      <div id="lgrid"></div>
+      <div id="laviso"></div>
+      <div class="pie">
+        <div class="dim" id="linfo"></div>
+        <div class="fila">
+          <input class="busca" type="url" id="gUrl" placeholder="O pega aquí el enlace de otra presentación de Drive">
+          <button class="bt" id="gGo">Proyectar enlace</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Crear ================= -->
+    <section id="vCrear" hidden>
+      <div class="crear">
+        <aside class="card">
+          <div class="rot" id="edEstado">Canción nueva</div>
+          <div class="campo"><label for="fTit">Título</label><input id="fTit" data-c="titulo" maxlength="120" placeholder="Nombre de la canción" autocomplete="off"></div>
+          <div class="campo"><label for="fAut">Autor</label><input id="fAut" data-c="autor" maxlength="120" placeholder="Opcional" autocomplete="off"></div>
+          <div class="campo"><label for="fLet">Letra</label><textarea id="fLet" data-c="letra" placeholder="Pega aquí la letra.&#10;&#10;Cada línea en blanco&#10;empieza una diapositiva nueva."></textarea></div>
+          <div class="dim" style="margin-top:6px">Una línea en blanco separa las diapositivas. Para unir dos, borra la línea en blanco entre ellas.</div>
+
+          <h2>División</h2>
+          <div class="campo"><label for="fMax">Máximo de líneas por diapositiva (0 = sin límite)</label><input id="fMax" type="number" data-e="maxLines" min="0" max="20" inputmode="numeric"></div>
+          <label class="marcar"><input type="checkbox" data-e="hideLabels">Ocultar etiquetas (Coro, Verso, Puente…)</label>
+          <label class="marcar"><input type="checkbox" data-e="titleSlide">Diapositiva de título al inicio</label>
+          <label class="marcar"><input type="checkbox" data-e="endBlank">Diapositiva vacía al final</label>
+
+          <h2>Fondo</h2>
+          <div class="presets" id="presets"></div>
+          <div class="dos">
+            <div class="campo"><label for="fBg">Color de fondo</label><input id="fBg" type="color"></div>
+            <div class="campo"><label for="fTx">Color del texto</label><input id="fTx" type="color" data-e="textColor"></div>
+          </div>
+          <div class="campo"><span class="lb">Biblioteca de fondos</span></div>
+          <div class="fondos" id="fondos"></div>
+          <input type="file" id="fFile" accept="image/*" hidden>
+          <div class="campo" id="cOsc"><label for="fOsc">Oscurecer la imagen</label><input id="fOsc" type="range" data-e="overlay" min="0" max="85"></div>
+
+          <h2>Texto</h2>
+          <div class="dos">
+            <div class="campo"><label for="fFont">Fuente</label>
+              <select id="fFont" data-e="font"><option>Arial</option><option>Calibri</option><option>Segoe UI</option><option>Verdana</option><option>Trebuchet MS</option><option>Georgia</option><option>Times New Roman</option><option>Impact</option></select></div>
+            <div class="campo"><label for="fAl">Alineación</label>
+              <select id="fAl" data-e="align"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></div>
+          </div>
+          <div class="campo"><label for="fSize">Tamaño máximo de letra</label><input id="fSize" type="range" data-e="size" min="40" max="160"></div>
+          <div class="dim">Si una línea es muy larga, se parte o se achica sola para que entre.</div>
+          <label class="marcar"><input type="checkbox" data-e="bold">Negrita</label>
+          <label class="marcar"><input type="checkbox" data-e="upper">Todo en mayúsculas</label>
+          <label class="marcar"><input type="checkbox" data-e="shadow">Sombra en el texto</label>
+        </aside>
+        <div>
+          <div class="fila acciones">
+            <span class="dim sep" id="count" style="margin-left:0;margin-right:auto"></span>
+            <button class="bt pri" id="bGuardar">Guardar en la biblioteca</button>
+            <button class="bt" id="bShow">▶ Presentar</button>
+            <button class="bt" id="bNueva">Nueva</button>
+            <button class="bt" id="bPptx">PowerPoint</button>
+            <button class="bt solo-pc" id="bPdf">Imprimir / PDF</button>
+            <button class="bt mal" id="bBorrar" hidden>Eliminar</button>
+          </div>
+          <div id="grid"></div>
+          <div class="vacio" id="empty"><b>Aún no hay diapositivas</b>Pega la letra de una canción y aparecerán aquí, listas para presentar.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="show" hidden><div class="frame" id="stage"></div><div id="num"></div><button id="salir">✕ Salir</button></div>
+<div id="gshow" hidden><button id="gclose">✕ Cerrar</button><iframe id="gframe" allow="fullscreen" title="Presentación de Drive"></iframe></div>
+<div id="print"></div>
+<div id="modal"></div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="../portal/vivo.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   YUPALETRAS · pantalla
+   Ingreso: misma sesión del portal Yupasoft (clave "yv_sesion"). Los permisos reales
+   los pone la base (funciones yl_*); aquí solo se ocultan los botones que no tocan.
+   Las presentaciones de Drive se muestran directo desde Google (no se descargan).
+   ===================================================================== */
+const SB_URL = 'https://ylwqztypjilecjwywawd.supabase.co', SB_KEY = 'sb_publishable_oHr1AqDbKi_lileKrmkhMg_4T6zYJ7E';
+const ID = 'yupaletras', PORTAL = '../portal/', WSP = 'https://wa.me/51967292374';
+const V = window.Vivo || { entrar() { } };
+const $ = s => document.querySelector(s);
+const COMO = new URLSearchParams(location.search).get('como');
+const SINPERMISO = 'No tienes permiso para hacer eso. Pídeselo al Responsable de tu organización.';
+
+/* ---------- Estado ---------- */
+let ses = null, P = null, acceso = 'ver', tab = 'lib';
+let D = { carpeta: null, lista: [], lista_el: null, lista_por: null, canciones: [], fondos: [] };
+const EST0 = { maxLines: 6, hideLabels: true, titleSlide: true, endBlank: true, font: 'Arial', bold: true, upper: false, shadow: true,
+  align: 'center', size: 96, textColor: '#ffffff', bgMode: 'color', c1: '#000000', c2: '#000000', fondo: null, overlay: 40 };
+const estiloDe = e => Object.assign({}, EST0, e && typeof e === 'object' ? e : {});
+let ed = { id: null, titulo: '', autor: '', letra: '', estilo: estiloDe() }, sucio = false;
+const puedeEditar = () => acceso === 'total' || acceso === 'editar';
+const puedeTodo = () => acceso === 'total';
+const PRESETS = [
+  { n: 'Negro', bgMode: 'color', c1: '#000000', c2: '#000000', textColor: '#ffffff' },
+  { n: 'Azul', bgMode: 'gradient', c1: '#0b1d3a', c2: '#1b4a7a', textColor: '#ffffff' },
+  { n: 'Vino', bgMode: 'gradient', c1: '#3a0b1d', c2: '#7a1b3a', textColor: '#ffffff' },
+  { n: 'Bosque', bgMode: 'gradient', c1: '#0f2e23', c2: '#1f5c45', textColor: '#ffffff' },
+  { n: 'Claro', bgMode: 'color', c1: '#ffffff', c2: '#ffffff', textColor: '#111111' },
+  { n: 'Crema', bgMode: 'color', c1: '#f6efe0', c2: '#f6efe0', textColor: '#2b2118' }];
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function isotipo(px) {
+  let r = '';
+  for (let c = 0; c < 4; c++) for (let f = 0; f < 4; f++) {
+    const llena = f >= 3 - c;
+    r += llena ? `<rect x="${c * 27}" y="${f * 27}" width="20" height="20" rx="5.5" fill="${c === 3 && f === 0 ? '#F2A93B' : '#2ED3B7'}"/>`
+      : `<rect x="${c * 27 + 1.6}" y="${f * 27 + 1.6}" width="16.8" height="16.8" rx="4.5" fill="none" stroke="currentColor" stroke-width="3.2" opacity=".3"/>`;
+  }
+  return `<svg viewBox="0 0 101 101" width="${px}" height="${px}" role="img" aria-label="Yupasoft">${r}</svg>`;
+}
+function toast(t) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3600); }
+const fecha = iso => { try { return new Date(iso).toLocaleString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+
+/* ---------- Sesión y red ---------- */
+try { ses = JSON.parse(localStorage.getItem('yv_sesion') || 'null'); } catch (e) { ses = null; }
+function guardarSes(s) { ses = s; try { if (s) localStorage.setItem('yv_sesion', JSON.stringify(s)); else localStorage.removeItem('yv_sesion'); } catch (e) { } }
+function alPortal() { location.replace(PORTAL + '?volver=' + ID); }
+function mensajeDe(d, st) {
+  const m = (d && (d.message || d.msg || d.error_description || d.error)) || ('Error ' + st);
+  if (/row-level security|permission denied/i.test(m)) return SINPERMISO;
+  return m;
+}
+async function pedir(ruta, opc = {}) {
+  const h = { apikey: SB_KEY, 'Content-Type': 'application/json' };
+  if (opc.ses !== false && ses) h.Authorization = 'Bearer ' + ses.access_token;
+  let r;
+  try { r = await fetch(SB_URL + ruta, { method: 'POST', headers: h, body: JSON.stringify(opc.cuerpo || {}) }); }
+  catch (e) { throw new Error('Sin conexión. Revisa tu internet e inténtalo de nuevo.'); }
+  const x = await r.text(); let d = null; try { d = x ? JSON.parse(x) : null; } catch (e) { }
+  if (!r.ok) { const er = new Error(mensajeDe(d, r.status)); er.status = r.status; throw er; }
+  return d;
+}
+async function token() {
+  if (!ses) { const e = new Error('Sin sesión'); e.status = 401; throw e; }
+  if (ses.expires_at - Date.now() / 1000 > 90) return;
+  try {
+    const d = await pedir('/auth/v1/token?grant_type=refresh_token', { cuerpo: { refresh_token: ses.refresh_token }, ses: false });
+    guardarSes({ access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() / 1000 + d.expires_in });
+  } catch (e) { if (e.status >= 400 && e.status < 500) e.status = 401; throw e; }
+}
+async function seguro(f) {      // si la sesión ya no sirve, vuelve al portal
+  try { await token(); return await f(); }
+  catch (e) { if (e.status === 401) { guardarSes(null); alPortal(); } throw e; }
+}
+const rpc = (nombre, cuerpo) => seguro(() => pedir('/rest/v1/rpc/' + nombre, { cuerpo }));
+const drive = cuerpo => seguro(() => pedir('/functions/v1/yl-drive', { cuerpo }));
+async function ocupado(boton, texto, f) {     // un botón no se puede apretar dos veces mientras trabaja
+  const antes = boton.textContent; boton.disabled = true; boton.textContent = texto;
+  try { return await f(); } catch (e) { toast(e.message || 'No se pudo completar'); }
+  finally { boton.disabled = false; boton.textContent = antes; }
+}
+
+/* ---------- Ingreso ---------- */
+function dispositivo() { const ua = navigator.userAgent || ''; return (/Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua))) ? 'celular' : 'computadora'; }
+function avisar(titulo, msg, reintentar) {
+  $('#app').hidden = true; $('#gate').hidden = false; $('#gT').textContent = titulo; $('#gM').textContent = msg;
+  const b = $('#gB'); b.textContent = '';
+  if (reintentar) { const r = el('button', 'pri', 'Reintentar'); r.onclick = comprobar; b.appendChild(r); }
+  const a1 = el('a', reintentar ? '' : 'pri', 'Ir a mis herramientas'); a1.href = PORTAL + '?menu=1'; b.appendChild(a1);
+  const a2 = el('a', '', 'Escribir a Yupasoft por WhatsApp'); a2.href = WSP; a2.target = '_blank'; a2.rel = 'noopener'; b.appendChild(a2);
+}
+async function comprobar() {
+  if (!ses) { alPortal(); return; }
+  $('#gT').textContent = 'Comprobando tu cuenta…'; $('#gM').textContent = 'Un momento.'; $('#gB').textContent = '';
+  try {
+    await token();
+    P = await pedir('/rest/v1/rpc/yp_mi_portal', { cuerpo: COMO ? { p_como: COMO } : {} });
+    const h = (P.herramientas || []).filter(x => x.id === ID)[0], l = h && h.licencia, adm = P.es_super && !P.como;
+    if (!h || (!l && !adm)) return avisar('Tu cuenta no tiene esta herramienta', 'Yupaletras no está activo en tu cuenta. Escríbenos y lo activamos.');
+    if (l && !l.activa) return avisar('Herramienta inactiva', 'Yupaletras está inactivo en tu cuenta. Escribe a Yupasoft.');
+    if (l && !l.vigente) return avisar('Tu licencia venció', 'Escribe a Yupasoft para renovar Yupaletras.');
+    if (l && !adm && l.dispositivos !== 'todos' && l.dispositivos !== dispositivo()) return avisar(l.dispositivos === 'computadora' ? 'Disponible solo en computadora' : 'Disponible solo en celular', l.dispositivos === 'computadora' ? 'Ábrelo desde tu laptop o PC.' : 'Ábrelo desde tu teléfono.');
+    const d = await pedir('/rest/v1/rpc/yl_abrir', { cuerpo: { p_como: COMO || null } });
+    entrar(d);
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) { guardarSes(null); alPortal(); return; }
+    if (e.status === 400) return avisar('No se pudo abrir Yupaletras', e.message);
+    avisar(e.status ? 'No se pudo comprobar tu cuenta' : 'Sin conexión', e.status ? 'Inténtalo de nuevo en un momento.' : 'Revisa tu internet e inténtalo de nuevo.', true);
+  }
+}
+function recibir(d) {
+  acceso = d.acceso || acceso;
+  D = { carpeta: d.carpeta || null, lista: d.lista || [], lista_el: d.lista_el || null, lista_por: d.lista_por || null, canciones: d.canciones || [], fondos: d.fondos || [] };
+}
+function entrar(d) {
+  recibir(d);
+  $('#gate').hidden = true; $('#app').hidden = false;
+  const n = P.nombre || P.usuario || '', o = P.empresa ? P.empresa.nombre : 'Yupasoft';
+  $('#quien').textContent = P.como ? o : (n ? n + ' · ' + o : o);
+  if (P.como) { $('#cinta').hidden = false; $('#cinta').textContent = 'Viendo como: ' + o + ' · solo lectura'; }
+  try { const b = JSON.parse(localStorage.getItem(claveBorrador()) || 'null'); if (b && typeof b.letra === 'string') { ed = { id: b.id || null, titulo: b.titulo || '', autor: b.autor || '', letra: b.letra, estilo: estiloDe(b.estilo) }; sucio = !!b.sucio; } } catch (e) { }
+  if (ed.id && !D.canciones.some(c => c.id === ed.id)) ed.id = null;      // el borrador era de una canción que ya no existe
+  let t = 'lib'; try { t = localStorage.getItem('yl_tab') || 'lib'; } catch (e) { }
+  medirBarra(); llenarForm(); pintarFondos(); libCats(); libRender(); edRender(); setTab(t === 'crear' ? 'crear' : 'lib');
+  if (ed.estilo.bgMode === 'fondo') cargarFondo(ed.estilo.fondo).then(edRender);
+}
+
+/* ---------- Tema y pestañas ---------- */
+function pintarTema() { const c = document.documentElement.getAttribute('data-tema') === 'claro'; $('#bTema').textContent = c ? '☾' : '☀'; const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = c ? '#F4F7FA' : '#0C1A2E'; }
+$('#bTema').onclick = () => { const c = document.documentElement.getAttribute('data-tema') === 'claro'; if (c) document.documentElement.removeAttribute('data-tema'); else document.documentElement.setAttribute('data-tema', 'claro'); try { localStorage.setItem('yp_tema', c ? 'oscuro' : 'claro'); } catch (e) { } pintarTema(); };
+function setTab(t) {
+  const cambia = t !== tab || $('#vLib').hidden === $('#vCrear').hidden;
+  tab = t; try { localStorage.setItem('yl_tab', t); } catch (e) { }
+  $('#vLib').hidden = t !== 'lib'; $('#vCrear').hidden = t !== 'crear';
+  document.querySelectorAll('#tabs button').forEach(b => { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  if (cambia) { try { V.entrar(t === 'lib' ? $('#vLib') : $('#vCrear')); } catch (e) { } }
+  if (t === 'lib' && matchMedia('(min-width:901px)').matches) $('#q').focus();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+/* =====================================================================
+   DIAPOSITIVAS: de la letra a las pantallas. Todo recibe la canción S = {titulo, autor, letra, estilo}.
+   ===================================================================== */
+const LABEL = /^[\[(]?\s*(coro|verso|estrofa|puente|pre-?\s?coro|intro|interludio|final|outro|estribillo|chorus|verse|bridge)\s*\d*\s*[\])]?\s*:?\s*(x\s*\d+)?$/i;
+function lyricSlides(S) {
+  const E = S.estilo, out = [];
+  for (const b of String(S.letra || '').replace(/\r/g, '').split(/\n[ \t]*(?:\n[ \t]*)+/)) {
+    let lines = b.split('\n').map(l => l.trim()).filter(Boolean);
+    if (E.hideLabels) lines = lines.filter(l => !LABEL.test(l) && !/^\[[^\]]*\]$/.test(l));
+    if (!lines.length) continue;
+    const max = Math.max(0, Math.floor(+E.maxLines || 0));
+    if (max && lines.length > max) {      // estrofa larga: se reparte en partes parejas
+      const k = Math.ceil(lines.length / max), base = Math.floor(lines.length / k), extra = lines.length % k;
+      let p = 0;
+      for (let i = 0; i < k; i++) { const n = base + (i < extra ? 1 : 0); out.push(lines.slice(p, p + n)); p += n; }
+    } else out.push(lines);
+  }
+  return out;
+}
+function allSlides(S) {
+  const ls = lyricSlides(S), deck = [];
+  if (!ls.length) return deck;
+  if (S.estilo.titleSlide && String(S.titulo || '').trim()) deck.push({ type: 'title' });
+  ls.forEach((lines, i) => deck.push({ type: 'lyrics', lines, li: i }));
+  if (S.estilo.endBlank) deck.push({ type: 'blank' });
+  return deck;
+}
+const ctx2 = document.createElement('canvas').getContext('2d');
+const AW = 1280 * 0.88, AH = 720 - 2 * 57.6;
+const shown = (E, t) => E.upper ? t.toUpperCase() : t;
+const medir = (E) => { ctx2.font = (E.bold ? 700 : 400) + ' 100px "' + E.font + '"'; return t => ctx2.measureText(shown(E, t)).width; };
+function fit(E, lines, cap, reserva) {
+  const mw = medir(E); let m = 1; for (const l of lines) m = Math.max(m, mw(l));
+  return Math.max(10, Math.min(cap, AW / m * 100 * 0.98, (AH - (reserva || 0)) / (lines.length * 1.25)));
+}
+function wrap(E, lines) {      // una línea que obligaría a letra muy chica se parte en dos o más
+  const mw = medir(E), lim = AW / 56 * 100, out = [];
+  for (const l of lines) {
+    const w = mw(l);
+    if (w <= lim) { out.push(l); continue; }
+    const k = Math.ceil(w / lim), meta = w / k; let cur = '', hechas = 0;
+    for (const palabra of l.split(/\s+/)) {
+      const t = cur ? cur + ' ' + palabra : palabra;
+      if (cur && hechas < k - 1 && mw(t) > meta * 1.08) { out.push(cur); hechas++; cur = palabra; } else cur = t;
+    }
+    if (cur) out.push(cur);
+  }
+  return out;
+}
+function titleSizes(S) {
+  const au = String(S.autor || '').trim() ? 40 : 0, L = wrap(S.estilo, [String(S.titulo).trim()]);
+  return { L, t: fit(S.estilo, L, Math.min(150, S.estilo.size * 1.2), au ? au * 1.25 + 26 : 0), a: au };
+}
+
+/* ---------- Fondos ---------- */
+const fondoImg = new Map(), fondoPide = new Map();
+const HEX = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#000000';
+const JPEG = s => typeof s === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s);
+function imagenDe(E) {
+  if (E.bgMode !== 'fondo' || !E.fondo) return null;
+  if (fondoImg.has(E.fondo)) return fondoImg.get(E.fondo);
+  const f = D.fondos.find(x => x.id === E.fondo); return f && JPEG(f.mini) ? f.mini : null;      // mientras llega la grande, la miniatura
+}
+function cargarFondo(id) {
+  if (!id || fondoImg.has(id) || !D.fondos.some(f => f.id === id)) return Promise.resolve();
+  if (!fondoPide.has(id)) fondoPide.set(id, rpc('yl_fondo', { p_id: id, p_como: COMO || null }).then(img => { if (JPEG(img)) fondoImg.set(id, img); }).catch(() => { }).finally(() => fondoPide.delete(id)));
+  return fondoPide.get(id);
+}
+function bgCss(E) {
+  const img = imagenDe(E);
+  if (img) { const o = Math.max(0, Math.min(85, +E.overlay || 0)) / 100; return 'linear-gradient(rgba(0,0,0,' + o + '),rgba(0,0,0,' + o + ')),url("' + img + '") center/cover no-repeat'; }
+  if (E.bgMode === 'gradient') return 'linear-gradient(135deg,' + HEX(E.c1) + ',' + HEX(E.c2) + ')';
+  return HEX(E.c1);
+}
+function estilar(caja, E) {      // el estilo de la canción viaja como variables del contenedor
+  const s = caja.style;
+  s.setProperty('--sbg', bgCss(E)); s.setProperty('--stx', HEX(E.textColor)); s.setProperty('--sff', '"' + String(E.font).replace(/["\\;]/g, '') + '"');
+  s.setProperty('--sfw', E.bold ? 700 : 400); s.setProperty('--sal', ['left', 'right'].includes(E.align) ? E.align : 'center');
+  s.setProperty('--ssh', E.shadow ? '0 .04em .18em rgba(0,0,0,.65)' : 'none');
+}
+function slideEl(S, s) {
+  const E = S.estilo, d = el('div', 'slide');
+  if (s.type === 'lyrics') {
+    const L = wrap(E, s.lines), t = el('div', 'tx', shown(E, L.join('\n')));
+    t.style.setProperty('--fs', fit(E, L, E.size)); d.appendChild(t);
+  } else if (s.type === 'title') {
+    const z = titleSizes(S), t = el('div', 'tx', shown(E, z.L.join('\n')));
+    t.style.setProperty('--fs', z.t); d.appendChild(t);
+    if (z.a) { const a = el('div', 'tx au', String(S.autor).trim()); a.style.setProperty('--fs', z.a); d.appendChild(a); }
+  }
+  return d;
+}
+function frameEl(S, s) { const f = el('div', 'frame'); f.appendChild(slideEl(S, s)); return f; }
+
+/* =====================================================================
+   BIBLIOTECA
+   ===================================================================== */
+const norm = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const DOCS = 'https://docs.google.com/presentation/d/';
+const okId = id => /^[\w-]{10,100}$/.test(id || '');
+function itemUrls(it) {
+  return it.t === 's' ? { embed: DOCS + it.id + '/embed?start=false&loop=false&rm=minimal', tab: DOCS + it.id + '/present' }
+    : { embed: 'https://drive.google.com/file/d/' + it.id + '/preview', tab: 'https://drive.google.com/file/d/' + it.id + '/view' };
+}
+function driveUrls(u) {      // enlace pegado a mano
+  let m;
+  if ((m = u.match(/docs\.google\.com\/presentation\/d\/e\/([\w-]+)/))) return { embed: DOCS + 'e/' + m[1] + '/embed?start=false&loop=false', tab: DOCS + 'e/' + m[1] + '/pub?start=false&loop=false' };
+  if ((m = u.match(/docs\.google\.com\/presentation\/d\/([\w-]+)/))) return itemUrls({ t: 's', id: m[1] });
+  if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/)) || (m = u.match(/drive\.google\.com\/.*[?&]id=([\w-]+)/))) return itemUrls({ t: 'p', id: m[1] });
+  return null;
+}
+let todos = [], hallados = [];
+function libArmar() {
+  const mias = D.canciones.map(c => ({ tipo: 'c', c, name: c.titulo, sub: 'Creada aquí' + (c.autor ? ' · ' + c.autor : ''), cat: '#mias' }));
+  const dr = D.lista.filter(x => x && okId(x.id)).map(x => { const name = String(x.n || '').replace(/\.pp[ts]x?$/i, '').trim(); return { tipo: 'd', id: x.id, t: x.t === 's' ? 's' : 'p', name, sub: x.c || '', cat: 'd:' + (x.c || '') }; });
+  todos = mias.concat(dr).sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  todos.forEach(i => { i.k = norm(i.name + ' ' + i.sub); });
+}
+function libCats() {
+  libArmar();
+  const sel = $('#cat'), antes = sel.value; sel.textContent = '';
+  const o = (v, t) => { const x = el('option', '', t); x.value = v; sel.appendChild(x); };
+  o('*', 'Todo'); o('#mias', 'Creadas en Yupaletras (' + D.canciones.length + ')');
+  if (D.lista.length) o('#drive', 'Todo lo de Drive (' + D.lista.length + ')');
+  [...new Set(todos.filter(i => i.tipo === 'd').map(i => i.cat))].sort((a, b) => a.localeCompare(b, 'es')).forEach(c => o(c, 'Drive · ' + (c.slice(2) || 'Carpeta principal')));
+  sel.value = [...sel.options].some(x => x.value === antes) ? antes : '*';
+}
+function libRender() {
+  const palabras = norm($('#q').value).split(/\s+/).filter(Boolean), cat = $('#cat').value;
+  hallados = todos.filter(i => (cat === '*' || i.cat === cat || (cat === '#drive' && i.tipo === 'd')) && palabras.every(w => i.k.includes(w)));
+  const g = $('#lgrid'); g.textContent = '';
+  for (const it of hallados) {
+    const d = el('div', 'pz'), b = el('button', 'nm', it.name);
+    if (it.sub) b.appendChild(el('small', '', it.sub));
+    b.title = 'Proyectar'; b.onclick = () => proyectar(it); d.appendChild(b);
+    const op = (txt, tip, fn) => { const x = el('button', 'op', txt); x.title = tip; x.setAttribute('aria-label', tip); x.onclick = fn; d.appendChild(x); return x; };
+    if (it.tipo === 'c') {
+      d.appendChild(el('span', 'tg mia', 'CREADA'));
+      op('✎', puedeEditar() ? 'Editar' : 'Ver', () => editar(it.c));
+    } else {
+      if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint: se muestra en el visor de Drive. Impórtalo para proyectarlo a pantalla completa.'; d.appendChild(tg); }
+      if (puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
+      op('↗', 'Abrir en otra pestaña', () => window.open(itemUrls(it).tab, '_blank', 'noopener'));
+    }
+    g.appendChild(d);
+  }
+  $('#lcount').textContent = todos.length ? hallados.length + ' de ' + todos.length : '';
+  $('#bAct').hidden = !(D.carpeta && puedeEditar());
+  $('#bCarp').hidden = !puedeTodo();
+  const av = $('#laviso'); av.textContent = '';
+  const vacio = (tit, txt, boton, fn) => { const v = el('div', 'vacio'); v.appendChild(el('b', '', tit)); v.appendChild(document.createTextNode(txt)); if (boton) { const b = el('button', 'bt pri', boton); b.style.marginTop = '12px'; b.onclick = fn; v.appendChild(el('br')); v.appendChild(b); } av.appendChild(v); };
+  if (!D.carpeta) {
+    if (puedeTodo()) vacio('Conecta la carpeta de Drive de tu organización', 'Las presentaciones que ya tienen en Drive aparecerán aquí para buscarlas y proyectarlas sin descargar nada.', 'Conectar carpeta de Drive', abrirCarpeta);
+    else if (!todos.length) vacio('Todavía no hay presentaciones', 'El Responsable de tu organización aún no conectó la carpeta de Drive. Mientras tanto puedes crear diapositivas en la pestaña «Crear diapositivas».');
+  } else if (!D.lista.length) vacio('La carpeta está conectada', puedeEditar() ? 'Presiona «Actualizar» para leer las presentaciones de la carpeta.' : 'Aún no se ha leído la carpeta.', puedeEditar() ? '↻ Actualizar' : '', () => actualizar($('#bAct')));
+  else if (!hallados.length) vacio('Nada coincide con la búsqueda', 'Prueba con otra palabra del título.');
+  $('#linfo').textContent = D.lista.length
+    ? D.lista.length + ' presentaciones de Drive · lista leída el ' + fecha(D.lista_el) + (D.lista_por ? ' por ' + D.lista_por : '') + ' · si agregan canciones al Drive, presiona «Actualizar».'
+    : '';
+}
+$('#q').addEventListener('input', libRender);
+$('#cat').addEventListener('change', libRender);
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter' && hallados.length) proyectar(hallados[0]); });
+function proyectar(it) { if (it.tipo === 'c') presentar({ titulo: it.c.titulo, autor: it.c.autor || '', letra: it.c.letra, estilo: estiloDe(it.c.estilo) }, 0); else gProject(itemUrls(it)); }
+
+async function actualizar(boton) {
+  await ocupado(boton, 'Leyendo Drive…', async () => {
+    const d = await drive({});
+    D.lista = d.lista || []; D.lista_el = d.lista_el || new Date().toISOString(); D.lista_por = d.lista_por || null;
+    libCats(); libRender(); toast('Lista actualizada: ' + D.lista.length + ' presentaciones');
+  });
+}
+$('#bAct').onclick = e => actualizar(e.currentTarget);
+
+/* Carpeta de Drive (solo el Responsable) */
+function cerrarModal() { $('#modal').textContent = ''; }
+function abrirCarpeta() {
+  const velo = el('div', 'velo'), c = el('div', 'card');
+  c.appendChild(el('h2', '', 'Carpeta de Drive'));
+  const p = el('p', 'dim', 'Pega el enlace de la carpeta donde están las presentaciones (en Drive: Compartir → Copiar enlace). Tiene que estar compartida con «Cualquier persona que tenga el enlace», como lector. Se leen también sus subcarpetas.'); c.appendChild(p);
+  const campo = el('div', 'campo'), lb = el('label', '', 'Enlace de la carpeta'), inp = el('input');
+  inp.type = 'url'; inp.id = 'mCarp'; lb.htmlFor = 'mCarp'; inp.placeholder = 'https://drive.google.com/drive/folders/…';
+  inp.value = D.carpeta ? 'https://drive.google.com/drive/folders/' + D.carpeta : '';
+  campo.appendChild(lb); campo.appendChild(inp); c.appendChild(campo);
+  const f = el('div', 'fila');
+  if (D.carpeta) { const q = el('button', 'bt mal', 'Desconectar'); q.style.marginRight = 'auto'; q.onclick = () => { if (confirm('¿Desconectar la carpeta? Las presentaciones de Drive dejarán de aparecer en la biblioteca. Las canciones creadas aquí no se tocan.')) guardarCarpeta('', q); }; f.appendChild(q); }
+  const x = el('button', 'bt', 'Cancelar'); x.onclick = cerrarModal; f.appendChild(x);
+  const g = el('button', 'bt pri', 'Guardar y leer'); g.onclick = () => guardarCarpeta(inp.value, g); f.appendChild(g);
+  c.appendChild(f); velo.appendChild(c);
+  velo.addEventListener('mousedown', e => { if (e.target === velo) cerrarModal(); });
+  $('#modal').textContent = ''; $('#modal').appendChild(velo); inp.focus();
+}
+async function guardarCarpeta(enlace, boton) {
+  await ocupado(boton, 'Guardando…', async () => {
+    const antes = D.carpeta, r = await rpc('yl_carpeta', { p_enlace: enlace });
+    D.carpeta = r.carpeta || null;
+    if (D.carpeta !== antes) { D.lista = []; D.lista_el = null; D.lista_por = null; }
+    cerrarModal(); libCats(); libRender();
+    if (D.carpeta) await actualizar($('#bAct')); else toast('Carpeta desconectada');
+  });
+}
+$('#bCarp').onclick = abrirCarpeta;
+
+/* Importar una presentación de Drive como canción de Yupaletras */
+async function importar(it, boton) {
+  if (sucio && !confirm('Tienes cambios sin guardar en «Crear diapositivas». Si importas, se pierden. ¿Continuar?')) return;
+  await ocupado(boton, '…', async () => {
+    const d = await drive({ accion: 'importar', id: it.id });
+    let dp = (d.diapos || []).filter(x => Array.isArray(x) && x.length);
+    // Si la primera diapositiva es solo el título, no se repite: Yupaletras pone su propia diapositiva de título
+    if (dp.length > 1 && dp[0].length === 1) { const a = norm(dp[0][0]).replace(/[^a-z0-9]/g, ''), b = norm(it.name).replace(/[^a-z0-9]/g, ''); if (a && (b.includes(a) || a.includes(b))) dp = dp.slice(1); }
+    ed = { id: null, titulo: it.name.slice(0, 120), autor: '', letra: dp.map(x => x.join('\n')).join('\n\n').slice(0, 20000), estilo: Object.assign({}, ed.estilo) };
+    sucio = true; llenarForm(); edRender(); setTab('crear');
+    toast('Importada: elige el fondo y presiona «Guardar en la biblioteca»');
+  });
+}
+
+/* Proyectar algo de Drive */
+function gProject(r) {
+  const g = $('#gshow'); $('#gframe').src = r.embed; g.hidden = false;
+  if (g.requestFullscreen) g.requestFullscreen().catch(() => { });
+  $('#gframe').onload = () => { try { $('#gframe').focus(); } catch (e) { } };
+}
+$('#gGo').onclick = () => {
+  const r = driveUrls($('#gUrl').value.trim());
+  if (r) gProject(r); else toast('Ese enlace no parece de una presentación de Google Drive');
+};
+$('#gclose').onclick = cerrarTodo;
+
+/* =====================================================================
+   CREAR
+   ===================================================================== */
+const claveBorrador = () => 'yl_borrador:' + ((P && (P.usuario || P.email)) || '') + (COMO ? ':como' : '');
+function borrador() { if (!P) return; try { localStorage.setItem(claveBorrador(), JSON.stringify(Object.assign({}, ed, { sucio }))); } catch (e) { } }
+function llenarForm() {
+  document.querySelectorAll('[data-c]').forEach(i => { i.value = ed[i.dataset.c] || ''; });
+  document.querySelectorAll('[data-e]').forEach(i => { const v = ed.estilo[i.dataset.e]; if (i.type === 'checkbox') i.checked = !!v; else i.value = v; });
+  $('#fBg').value = HEX(ed.estilo.c1);
+  const ro = !puedeEditar();
+  document.querySelectorAll('#vCrear aside input, #vCrear aside select, #vCrear aside textarea').forEach(i => { if (i.id !== 'fFile') i.disabled = ro; });
+}
+document.querySelectorAll('[data-c]').forEach(i => i.addEventListener('input', () => { ed[i.dataset.c] = i.value; sucio = true; edRender(); }));
+document.querySelectorAll('[data-e]').forEach(i => i.addEventListener('input', () => {
+  ed.estilo[i.dataset.e] = i.type === 'checkbox' ? i.checked : (i.type === 'number' || i.type === 'range') ? +i.value : i.value;
+  sucio = true; edRender();
+}));
+PRESETS.forEach(p => {
+  const b = el('button', '', 'Aa'); b.title = p.n; b.setAttribute('aria-label', 'Fondo ' + p.n);
+  b.style.background = p.bgMode === 'gradient' ? 'linear-gradient(135deg,' + p.c1 + ',' + p.c2 + ')' : p.c1; b.style.color = p.textColor;
+  b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: p.bgMode, c1: p.c1, c2: p.c2, textColor: p.textColor, fondo: null }); sucio = true; llenarForm(); pintarFondos(); edRender(); };
+  $('#presets').appendChild(b);
+});
+$('#fBg').addEventListener('input', e => { Object.assign(ed.estilo, { bgMode: 'color', c1: e.target.value, c2: e.target.value, fondo: null }); sucio = true; pintarFondos(); edRender(); });
+
+function pintarFondos() {
+  const g = $('#fondos'); g.textContent = '';
+  for (const f of D.fondos) {
+    const b = el('button', 'fo' + (ed.estilo.bgMode === 'fondo' && ed.estilo.fondo === f.id ? ' on' : ''));
+    b.title = f.nombre; b.setAttribute('aria-label', 'Fondo ' + f.nombre);
+    if (JPEG(f.mini)) b.style.backgroundImage = 'url("' + f.mini + '")';
+    b.onclick = () => { if (!puedeEditar()) return; Object.assign(ed.estilo, { bgMode: 'fondo', fondo: f.id }); if (ed.estilo.textColor === '#111111' || ed.estilo.textColor === '#2b2118') ed.estilo.textColor = '#ffffff'; sucio = true; llenarForm(); pintarFondos(); edRender(); cargarFondo(f.id).then(edRender); };
+    if (puedeTodo()) { const q = el('button', 'qx', '✕'); q.title = 'Eliminar este fondo'; q.setAttribute('aria-label', 'Eliminar el fondo ' + f.nombre); q.onclick = e => { e.stopPropagation(); borrarFondo(f, q); }; b.appendChild(q); }
+    g.appendChild(b);
+  }
+  if (puedeEditar()) { const m = el('button', 'fo mas', '＋ Agregar'); m.title = 'Subir una imagen a la biblioteca de fondos'; m.onclick = () => $('#fFile').click(); g.appendChild(m); }
+  else if (!D.fondos.length) g.appendChild(el('div', 'dim', 'Sin fondos todavía.'));
+  $('#cOsc').hidden = ed.estilo.bgMode !== 'fondo';
+}
+function reducir(im, w, h, q) {      // recorta al centro en 16:9 y devuelve JPEG
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const k = Math.max(w / im.width, h / im.height), W = im.width * k, H = im.height * k;
+  c.getContext('2d').drawImage(im, (w - W) / 2, (h - H) / 2, W, H);
+  return c.toDataURL('image/jpeg', q);
+}
+$('#fFile').addEventListener('change', e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  const url = URL.createObjectURL(file), im = new Image();
+  im.onerror = () => { URL.revokeObjectURL(url); toast('No se pudo leer esa imagen. Prueba con un JPG o PNG.'); };
+  im.onload = async () => {
+    URL.revokeObjectURL(url);
+    let q = 0.82, grande = reducir(im, 1280, 720, q);
+    while (grande.length > 680000 && q > 0.35) { q -= 0.1; grande = reducir(im, 1280, 720, q); }
+    const mini = reducir(im, 320, 180, 0.6), nombre = (file.name || 'Fondo').replace(/\.[a-z0-9]+$/i, '').slice(0, 60) || 'Fondo';
+    const tile = $('#fondos .mas');
+    await ocupado(tile, 'Subiendo…', async () => {
+      const f = await rpc('yl_guardar_fondo', { p_nombre: nombre, p_mini: mini, p_imagen: grande });
+      D.fondos.push(f); fondoImg.set(f.id, grande);
+      Object.assign(ed.estilo, { bgMode: 'fondo', fondo: f.id }); sucio = true;
+      llenarForm(); pintarFondos(); edRender(); toast('Fondo agregado a la biblioteca');
+    });
+  };
+  im.src = url;
+});
+async function borrarFondo(f, boton) {
+  if (!confirm('¿Eliminar el fondo «' + f.nombre + '» de la biblioteca? Las canciones que lo usan se verán con su color de respaldo.')) return;
+  await ocupado(boton, '…', async () => {
+    await rpc('yl_borrar_fondo', { p_id: f.id });
+    D.fondos = D.fondos.filter(x => x.id !== f.id); fondoImg.delete(f.id);
+    if (ed.estilo.fondo === f.id) Object.assign(ed.estilo, { bgMode: 'color', fondo: null });
+    llenarForm(); pintarFondos(); edRender(); toast('Fondo eliminado');
+  });
+}
+
+function edRender() {
+  borrador();
+  const deck = allSlides(ed), grid = $('#grid');
+  grid.textContent = ''; estilar(grid, ed.estilo);
+  $('#empty').hidden = deck.length > 0;
+  $('#count').textContent = deck.length ? deck.length + (deck.length === 1 ? ' diapositiva' : ' diapositivas') : '';
+  const guardada = ed.id && D.canciones.find(c => c.id === ed.id);
+  $('#edEstado').textContent = !puedeEditar() ? 'Solo lectura' : guardada ? (sucio ? 'Editando · cambios sin guardar' : 'Guardada en la biblioteca') : (sucio ? 'Canción nueva · sin guardar' : 'Canción nueva');
+  $('#bGuardar').hidden = !puedeEditar(); $('#bGuardar').textContent = guardada ? 'Guardar cambios' : 'Guardar en la biblioteca';
+  $('#bNueva').hidden = !puedeEditar();
+  $('#bBorrar').hidden = !(guardada && puedeTodo());
+  const nl = deck.filter(s => s.type === 'lyrics').length;
+  deck.forEach((s, i) => {
+    const c = el('div', 'dp'), f = frameEl(ed, s);
+    f.title = 'Presentar desde aquí'; f.onclick = () => presentar(ed, i); c.appendChild(f);
+    const bar = el('div', 'dpb');
+    bar.appendChild(el('span', '', (i + 1) + (s.type === 'title' ? ' · Título' : s.type === 'blank' ? ' · Vacía' : '')));
+    if (s.type === 'lyrics' && puedeEditar()) {
+      const b = (txt, tip, fn, dis) => { const x = el('button', '', txt); x.title = tip; x.setAttribute('aria-label', tip); x.disabled = !!dis; x.onclick = fn; bar.appendChild(x); };
+      b('↑', 'Subir', () => mover(s.li, 'up'), s.li === 0);
+      b('↓', 'Bajar', () => mover(s.li, 'down'), s.li === nl - 1);
+      b('⧉', 'Duplicar (para repetir el coro)', () => mover(s.li, 'dup'));
+      b('✕', 'Quitar esta diapositiva', () => mover(s.li, 'del'));
+    }
+    c.appendChild(bar); grid.appendChild(c);
+  });
+}
+function mover(i, que) {
+  const ls = lyricSlides(ed);
+  if (que === 'up' && i > 0) [ls[i - 1], ls[i]] = [ls[i], ls[i - 1]];
+  else if (que === 'down' && i < ls.length - 1) [ls[i + 1], ls[i]] = [ls[i], ls[i + 1]];
+  else if (que === 'dup') ls.splice(i, 0, ls[i].slice());
+  else if (que === 'del') ls.splice(i, 1);
+  ed.letra = ls.map(l => l.join('\n')).join('\n\n'); $('#fLet').value = ed.letra; sucio = true; edRender();
+}
+function editar(c) {
+  if (sucio && ed.id !== c.id && !confirm('Tienes cambios sin guardar en «Crear diapositivas». Si abres otra canción, se pierden. ¿Continuar?')) return;
+  if (ed.id !== c.id || !sucio) { ed = { id: c.id, titulo: c.titulo, autor: c.autor || '', letra: c.letra, estilo: estiloDe(c.estilo) }; sucio = false; }
+  llenarForm(); pintarFondos(); edRender(); setTab('crear');
+  if (ed.estilo.bgMode === 'fondo') cargarFondo(ed.estilo.fondo).then(edRender);
+}
+$('#bNueva').onclick = () => {
+  if (sucio && !confirm('Hay cambios sin guardar. ¿Empezar una canción nueva de todos modos?')) return;
+  ed = { id: null, titulo: '', autor: '', letra: '', estilo: Object.assign({}, ed.estilo) }; sucio = false;
+  llenarForm(); edRender(); $('#fTit').focus();
+};
+$('#bGuardar').onclick = e => ocupado(e.currentTarget, 'Guardando…', async () => {
+  if (!ed.titulo.trim()) { $('#fTit').focus(); throw new Error('Ponle un título a la canción.'); }
+  if (!lyricSlides(ed).length) { $('#fLet').focus(); throw new Error('Falta la letra.'); }
+  const c = await rpc('yl_guardar_cancion', { p_id: ed.id, p_titulo: ed.titulo, p_autor: ed.autor, p_letra: ed.letra, p_estilo: ed.estilo });
+  const i = D.canciones.findIndex(x => x.id === c.id); if (i >= 0) D.canciones[i] = c; else D.canciones.push(c);
+  ed.id = c.id; sucio = false; libCats(); libRender(); edRender(); toast('Guardada: ya aparece en la Biblioteca');
+});
+$('#bBorrar').onclick = e => {
+  if (!ed.id || !confirm('¿Eliminar «' + ed.titulo + '» de la biblioteca? No se puede deshacer.')) return;
+  ocupado(e.currentTarget, 'Eliminando…', async () => {
+    await rpc('yl_borrar_cancion', { p_id: ed.id });
+    D.canciones = D.canciones.filter(x => x.id !== ed.id);
+    ed = { id: null, titulo: '', autor: '', letra: '', estilo: Object.assign({}, ed.estilo) }; sucio = false;
+    llenarForm(); libCats(); libRender(); edRender(); setTab('lib'); toast('Canción eliminada');
+  });
+};
+window.addEventListener('beforeunload', borrador);
+
+/* ---------- Presentar ---------- */
+const show = $('#show'); let pres = null, quietoT = 0;
+function dibujar() {
+  const st = $('#stage'); st.textContent = '';
+  if (!pres.negro) st.appendChild(slideEl(pres.S, pres.deck[pres.i]));
+  $('#num').textContent = (pres.i + 1) + ' / ' + pres.deck.length;
+}
+function ir(n) { pres.i = Math.max(0, Math.min(pres.deck.length - 1, n)); pres.negro = false; dibujar(); }
+function presentar(S, i) {
+  const deck = allSlides(S);
+  if (!deck.length) { toast('Primero pega una letra'); return; }
+  pres = { S, deck, i: 0, negro: false };
+  estilar($('#stage'), S.estilo); show.hidden = false; ir(i || 0); despertar();
+  if (show.requestFullscreen) show.requestFullscreen().catch(() => { });
+  if (S.estilo.bgMode === 'fondo') cargarFondo(S.estilo.fondo).then(() => { if (pres && pres.S === S) estilar($('#stage'), S.estilo); });
+}
+function cerrarTodo() {
+  show.hidden = true; pres = null;
+  if (!$('#gshow').hidden) { $('#gshow').hidden = true; $('#gframe').src = 'about:blank'; }
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
+}
+function despertar() { show.classList.remove('quieto'); clearTimeout(quietoT); quietoT = setTimeout(() => show.classList.add('quieto'), 2500); }
+show.addEventListener('mousemove', despertar);
+show.addEventListener('click', e => { if (e.target.id === 'salir') return; ir(pres.i + (e.clientX < innerWidth * 0.3 ? -1 : 1)); });
+$('#salir').onclick = cerrarTodo;
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if ($('#modal').firstChild) { cerrarModal(); return; } if (!show.hidden || !$('#gshow').hidden) cerrarTodo(); return; }
+  if (show.hidden || !pres) return;
+  const k = e.key;
+  if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ' || k === 'Enter') ir(pres.i + 1);
+  else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp' || k === 'Backspace') ir(pres.i - 1);
+  else if (k === 'Home') ir(0);
+  else if (k === 'End') ir(pres.deck.length - 1);
+  else if (k === 'b' || k === 'B' || k === '.') { pres.negro = !pres.negro; dibujar(); }
+  else return;
+  e.preventDefault();
+});
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) cerrarTodo(); });
+$('#bShow').onclick = () => presentar(ed, 0);
+
+/* ---------- PDF ---------- */
+$('#bPdf').onclick = async () => {
+  const d = allSlides(ed); if (!d.length) { toast('Primero pega una letra'); return; }
+  await cargarFondo(ed.estilo.bgMode === 'fondo' ? ed.estilo.fondo : null);
+  const p = $('#print'); p.textContent = ''; estilar(p, ed.estilo); d.forEach(s => p.appendChild(frameEl(ed, s)));
+  window.print();
+};
+
+/* ---------- PowerPoint (la librería se carga solo cuando se pide) ---------- */
+let pptxLib = null;
+function cargarPptx() {
+  if (window.PptxGenJS) return Promise.resolve();
+  if (!pptxLib) pptxLib = new Promise((ok, mal) => { const s = document.createElement('script'); s.src = 'pptxgen.bundle.js'; s.onload = ok; s.onerror = () => { pptxLib = null; mal(new Error('No se pudo cargar el generador de PowerPoint. Revisa tu internet.')); }; document.head.appendChild(s); });
+  return pptxLib;
+}
+const hex = c => HEX(c).replace('#', '').toUpperCase();
+function pptxBg(E) {
+  const img = E.bgMode === 'fondo' ? imagenDe(E) : null;
+  if (!img && E.bgMode !== 'gradient') return Promise.resolve({ color: hex(E.c1) });
+  const c = document.createElement('canvas'); c.width = 1920; c.height = 1080; const g = c.getContext('2d');
+  const listo = () => ({ data: c.toDataURL('image/jpeg', 0.88).replace(/^data:/, '') });
+  if (!img) { const gr = g.createLinearGradient(0, 0, 1920, 1080); gr.addColorStop(0, HEX(E.c1)); gr.addColorStop(1, HEX(E.c2)); g.fillStyle = gr; g.fillRect(0, 0, 1920, 1080); return Promise.resolve(listo()); }
+  return new Promise((ok, mal) => {
+    const im = new Image();
+    im.onload = () => { const k = Math.max(1920 / im.width, 1080 / im.height), w = im.width * k, h = im.height * k; g.drawImage(im, (1920 - w) / 2, (1080 - h) / 2, w, h); g.fillStyle = 'rgba(0,0,0,' + Math.max(0, Math.min(85, +E.overlay || 0)) / 100 + ')'; g.fillRect(0, 0, 1920, 1080); ok(listo()); };
+    im.onerror = mal; im.src = img;
+  });
+}
+const pt = px => Math.max(8, Math.round(px * 0.75 * 0.94));
+async function buildPptx(S) {
+  const E = S.estilo;
+  await cargarPptx(); if (E.bgMode === 'fondo') await cargarFondo(E.fondo);
+  const p = new PptxGenJS(); p.layout = 'LAYOUT_WIDE';
+  p.title = String(S.titulo || '').trim() || 'Letra'; if (String(S.autor || '').trim()) p.author = String(S.autor).trim();
+  const bg = await pptxBg(E);
+  const caja = { x: 0.8, y: 0.6, w: 11.733, h: 6.3, margin: 0, align: E.align, valign: 'middle', fontFace: E.font, color: hex(E.textColor), bold: !!E.bold, fit: 'shrink' };
+  for (const s of allSlides(S)) {
+    const sl = p.addSlide(); sl.background = bg;
+    if (s.type === 'lyrics') { const L = wrap(E, s.lines); sl.addText(shown(E, L.join('\n')), Object.assign({ fontSize: pt(fit(E, L, E.size)) }, caja)); }
+    else if (s.type === 'title') {
+      const z = titleSizes(S), partes = [{ text: shown(E, z.L.join('\n')), options: { fontSize: pt(z.t), breakLine: !!z.a } }];
+      if (z.a) partes.push({ text: String(S.autor).trim(), options: { fontSize: pt(z.a), bold: false } });
+      sl.addText(partes, caja);
+    }
+  }
+  return p;
+}
+$('#bPptx').onclick = e => {
+  if (!allSlides(ed).length) { toast('Primero pega una letra'); return; }
+  ocupado(e.currentTarget, 'Preparando…', async () => {
+    const p = await buildPptx(ed), nombre = (ed.titulo.trim() || 'letra').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'letra';
+    await p.writeFile({ fileName: nombre + '.pptx' });
+  });
+};
+
+/* La barra superior es fija: su alto se mide para que nada quede escondido debajo */
+function medirBarra() { const b = document.querySelector('.barra'); if (b && b.offsetHeight) document.documentElement.style.setProperty('--bh', b.offsetHeight + 'px'); }
+window.addEventListener('resize', medirBarra);
+
+/* ---------- Arranque ---------- */
+$('#gLogo').innerHTML = isotipo(46); $('#logo').innerHTML = isotipo(24);
+pintarTema();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+window.__yl = { buildPptx, estado: () => ({ D, ed, acceso, tab, sucio }), setTab };
+comprobar();
+</script>
+</body>
+</html>

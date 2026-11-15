@@ -149,6 +149,14 @@ h2{font-size:16px;margin:0}
 #cTiempo{font:600 13px 'IBM Plex Mono',monospace;white-space:nowrap}
 #cBucle[aria-pressed="true"]{border-color:var(--acc);color:var(--acc)}
 #ctrl .que #cCola{color:var(--acc)}
+/* Tira de miniaturas: todas las diapositivas de lo que está en pantalla, con la actual resaltada */
+#cTira{flex:1 1 100%;position:relative;display:flex;gap:8px;overflow-x:auto;padding:3px 3px 7px;scrollbar-width:thin}
+#cTira button{position:relative;flex:none;width:150px;padding:0;border:2px solid var(--bd);border-radius:8px;overflow:hidden;background:#000;opacity:.72}
+#cTira button:hover{opacity:1;border-color:var(--acc)}
+#cTira button.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc);opacity:1}
+#cTira button i{position:absolute;left:4px;top:3px;z-index:1;font:600 10px 'IBM Plex Mono',monospace;font-style:normal;color:#fff;background:rgba(12,26,46,.78);border-radius:4px;padding:0 4px}
+#cTira .tx2{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;padding:15px 8px 6px;background:#101b2b;color:#e8eef5;font-size:10.5px;line-height:1.25;text-align:center;white-space:pre-line;overflow:hidden}
+#cTira .tx2.sin{color:#7f93ab}
 #print{display:none}
 
 /* Ventana */
@@ -183,7 +191,7 @@ h2{font-size:16px;margin:0}
 }
 @media (max-width:640px){
   .barra-in{padding:10px 14px}.tabs{padding:0 8px}
-  #ctrl{padding:8px 14px}#ctrl .mini{width:96px}#ctrl .que{flex-basis:140px}
+  #ctrl{padding:8px 14px}#ctrl .mini{width:96px}#ctrl .que{flex-basis:140px}#cTira button{width:112px}#cTira .tx2{font-size:9px}
   main{padding:14px 14px 96px}
   .solo-pc{display:none!important}
   .bt{min-height:44px}
@@ -244,6 +252,7 @@ h2{font-size:16px;margin:0}
       </div>
       <button class="bt" id="cNegro" aria-pressed="false" title="Deja la pantalla en negro sin perder la diapositiva (tecla B)">Pantalla negra</button>
       <button class="bt mal" id="cQuitar" title="Quita esto de la pantalla de proyección">Quitar</button>
+      <div id="cTira" hidden aria-label="Diapositivas"></div>
     </div>
   </header>
   <main>
@@ -1220,8 +1229,29 @@ $('#cPlay').onclick = vPausa;
 $('#cIni').onclick = () => vIr(0);
 $('#cBucle').onclick = () => { if (!pr || pr.tipo !== 'video') return; pr.bucle = !pr.bucle; enviar(); pintarVid(); };
 $('#cPos').addEventListener('input', e => { arrastre = Date.now(); if (pr && pr.tipo === 'video' && pr.dur) vIr(e.target.value / 1000 * pr.dur); });
+/* Tira de miniaturas del control: se ve lo que viene y lo que pasó, y con un clic se salta a cualquiera.
+   Canciones: la diapositiva tal como sale. Presentaciones de Google: el texto de cada una (su imagen solo la tiene Google). */
+let tiraDe = null;
+function pintarTira() {
+  const t = $('#cTira'), n = !pr ? 0 : pr.tipo === 'cancion' ? pr.deck.length : pr.tipo === 'drive' && pr.textos ? pr.textos.length : 0;
+  t.hidden = n < 2;
+  if (n < 2) { t.textContent = ''; tiraDe = null; return; }
+  if (pr.tipo === 'cancion') estilar(t, pr.S.estilo);
+  if (tiraDe !== pr || t.children.length !== n) {
+    tiraDe = pr; t.textContent = '';
+    for (let i = 0; i < n; i++) {
+      const b = el('button'); b.appendChild(el('i', '', String(i + 1)));
+      if (pr.tipo === 'cancion') b.appendChild(frameEl(pr.S, pr.deck[i]));
+      else { const l = pr.textos[i], hay = l && l.length; b.appendChild(el('div', 'tx2' + (hay ? '' : ' sin'), hay ? l.join('\n') : 'Sin texto')); }
+      b.title = 'Ir a la diapositiva ' + (i + 1); b.setAttribute('aria-label', 'Ir a la diapositiva ' + (i + 1)); b.onclick = () => ir(i, true);
+      t.appendChild(b);
+    }
+  }
+  [...t.children].forEach((b, i) => { b.classList.toggle('on', i === pr.i); if (i === pr.i) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+  const a = t.children[pr.i]; if (a) t.scrollLeft = a.offsetLeft - (t.clientWidth - a.offsetWidth) / 2;      // la actual al centro: se ven las de antes y las de después
+}
 function pintarCtrl() {
-  const c = $('#ctrl'); c.hidden = !pr; medirBarra();
+  const c = $('#ctrl'); c.hidden = !pr; pintarTira(); medirBarra();
   if (!pr) return;
   $('#cNom').textContent = pr.nombre;
   const mini = $('#cMini'); mini.textContent = ''; mini.hidden = pr.tipo !== 'cancion';

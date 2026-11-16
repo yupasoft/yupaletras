@@ -228,7 +228,7 @@ h2{font-size:16px;margin:0}
   <header class="barra">
     <div class="barra-in">
       <div class="marca"><span id="logo"></span><span>Yupaletras<small id="quien"></small></span></div>
-      <button class="bt peq" id="bPant" title="Abre la ventana que va en la pantalla del proyector"><i></i>Pantalla<span class="solo-pc"> de proyección</span></button>
+      <button class="bt peq" id="bPant" title="Abre la ventana que va en la pantalla del proyector. Luego arrástrala al proyector y dale doble clic (o F11) para pantalla completa"><i></i>Pantalla<span class="solo-pc"> de proyección</span></button>
       <button class="bt peq ico" id="bTema" aria-label="Cambiar tema" title="Cambiar tema">☀</button>
       <a class="bt peq" href="../portal/?menu=1" title="Mis herramientas">←<span class="solo-pc"> Mis herramientas</span></a>
     </div>
@@ -419,7 +419,7 @@ function isotipo(px) {
   }
   return `<svg viewBox="0 0 101 101" width="${px}" height="${px}" role="img" aria-label="Yupasoft">${r}</svg>`;
 }
-function toast(t) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3600); }
+function toast(t, ms) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, ms || 3600); }
 const fecha = iso => { try { return new Date(iso).toLocaleString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
 
 /* ---------- Sesión y red ---------- */
@@ -1302,7 +1302,7 @@ window.addEventListener('beforeunload', borrador);
 const canal = 'BroadcastChannel' in window ? new BroadcastChannel('yl_proyector') : null;
 let pantalla = null, viva = false, pr = null;
 const decir = m => { if (canal) canal.postMessage(m); };
-function pintarPantalla() { $('#bPant').classList.toggle('viva', viva); $('#bPant').title = viva ? 'La pantalla de proyección está abierta' : 'Abre la ventana que va en la pantalla del proyector'; }
+function pintarPantalla() { $('#bPant').classList.toggle('viva', viva); $('#bPant').title = viva ? 'La pantalla de proyección está abierta. Arrástrala al proyector y dale doble clic (o F11) para pantalla completa; con Esc sales' : 'Abre la ventana que va en la pantalla del proyector. Luego arrástrala al proyector y dale doble clic (o F11) para pantalla completa'; }
 // Si hay un segundo monitor y el navegador lo permite, la ventana se acomoda sola ahí
 async function acomodar(w) {
   try {
@@ -1320,6 +1320,8 @@ function asegurarPantalla(traer) {
   pantalla = window.open('proyector.html', 'yl_proyector', 'popup,width=960,height=540');
   if (!pantalla) { toast('El navegador bloqueó la ventana de proyección. Permite las ventanas emergentes de este sitio e inténtalo otra vez.'); return false; }
   acomodar(pantalla);
+  // La ventana de proyección ya no trae instrucciones (solo la cruz): se dicen aquí, cada vez que se abre
+  toast('Arrastra la ventana nueva a la pantalla del proyector y dale doble clic (o F11) para ponerla a pantalla completa. Con Esc sales.', 12000);
   return true;
 }
 $('#bPant').onclick = () => asegurarPantalla(true);

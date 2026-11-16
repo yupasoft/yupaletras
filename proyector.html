@@ -39,12 +39,11 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
 /* Tapa: evita que un clic en esta ventana avance la presentación por su cuenta y la desacomode del control */
 #tapa{position:absolute;inset:0;z-index:5}
 #negro{position:absolute;inset:0;z-index:6;background:#000}
-#guia{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;padding:24px;background:#0C1A2E;color:#F4F7FA;text-align:center}
-#guia div{max-width:560px}
-#guia h1{font-size:clamp(20px,3.2vw,30px);margin:0 0 12px}
-#guia p{margin:0 0 10px;color:#9BB0C9;font-size:clamp(14px,1.9vw,17px);line-height:1.5}
-#guia button{margin-top:10px;min-height:46px;padding:10px 20px;border:0;border-radius:10px;background:#2ED3B7;color:#0C1A2E;font:700 16px system-ui,Segoe UI,Arial,sans-serif;cursor:pointer}
-#guia small{display:block;margin-top:14px;color:#9BB0C9}
+/* Sin nada proyectado: fondo azul con una cruz blanca muy suave en el centro (al 6 %), que crece y se achica con la ventana.
+   Sin textos ni botones: la pantalla completa se pone con doble clic, con la tecla F o con F11. */
+#guia{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;background:#0C1A2E}
+#guia svg{display:block;width:min(100vw,100vh);height:min(100vw,100vh);opacity:.06}
+#guia small{position:absolute;left:0;right:0;bottom:24px;padding:0 24px;text-align:center;color:#9BB0C9;font-size:15px}
 [hidden]{display:none!important}
 .sinraton,.sinraton *{cursor:none!important}
 </style>
@@ -57,14 +56,10 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
   <div id="ft" hidden></div>
   <div id="tapa"></div>
   <div id="negro" hidden></div>
-  <div id="guia"><div>
-    <h1>Pantalla de proyección</h1>
-    <p>Arrastra esta ventana a la pantalla del proyector.</p>
-    <p>Luego ponla a pantalla completa con el botón, con doble clic o con la tecla F11.</p>
-    <p>Todo lo que proyectes desde Yupaletras aparecerá aquí.</p>
-    <button id="bFs">Poner a pantalla completa</button>
-    <small id="estado">Esperando a Yupaletras…</small>
-  </div></div>
+  <div id="guia">
+    <svg viewBox="0 0 1300 1300" aria-hidden="true"><path fill="#fff" d="M610 340h80v180h145v80H690v360h-80V600H465v-80h145z"/></svg>
+    <small id="estado" hidden></small>
+  </div>
 </div>
 <script src="videos.js"></script>
 <script>
@@ -228,23 +223,22 @@ if (canal) canal.onmessage = e => {
   if (m.t === 'vcmd') { if (pv && m.vk === pk && m.c === 'ir') { try { pv.currentTime = Math.max(0, Math.min(isFinite(pv.duration) ? pv.duration : 1e9, +m.s || 0)); } catch (x) { } } return; }
   if (m.t === 'ping') { decir({ t: 'hola' }); return; }
   if (m.t === 'cerrar') { window.close(); return; }
-  if (m.t === 'nada') { hay = false; quitarVideo(); quitarPeli(); quitarFoto(); soltarDrive(); siguiente(null); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = !!document.fullscreenElement; $('estado').textContent = 'Conectada con Yupaletras. Nada en pantalla.'; return; }
+  if (m.t === 'nada') { hay = false; quitarVideo(); quitarPeli(); quitarFoto(); soltarDrive(); siguiente(null); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = false; return; }
   if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else if (m.t === 'video') peli(m); else if (m.t === 'foto') foto(m); else return;
   if (m.t !== 'foto') quitarFoto();
   siguiente(m.prox);
   hay = true; $('guia').hidden = true; $('negro').hidden = !m.negro;
 };
-else $('estado').textContent = 'Este navegador no permite conectar las dos ventanas. Usa Chrome o Edge.';
+else { $('estado').textContent = 'Este navegador no permite conectar las dos ventanas. Usa Chrome o Edge.'; $('estado').hidden = false; }
 
 /* ---------- Pantalla completa y teclas ---------- */
 function completa() { if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => { }); }
-$('bFs').onclick = completa;
 document.addEventListener('dblclick', completa);
 document.addEventListener('pointerdown', conSonido);
-document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) $('guia').hidden = true; else if (!hay) $('guia').hidden = false; });
 document.addEventListener('keydown', e => {
   conSonido();
-  if (e.key === 'f' || e.key === 'F') { completa(); return; }
+  // F11 se atiende aquí (no lo hace el navegador): así de esa pantalla completa también se sale con Esc
+  if (e.key === 'f' || e.key === 'F' || e.key === 'F11') { if (!e.repeat) completa(); e.preventDefault(); return; }
   if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', ' ', 'Enter', 'Backspace', 'Home', 'End', 'b', 'B', '.'].includes(e.key)) { decir({ t: 'tecla', k: e.key }); e.preventDefault(); }
 });
 let rt = 0;

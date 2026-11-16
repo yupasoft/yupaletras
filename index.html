@@ -134,7 +134,10 @@ h2{font-size:16px;margin:0}
 /* Control de lo que está en la pantalla de proyección */
 #bPant i{width:9px;height:9px;border-radius:50%;background:var(--mute);flex:none}
 #bPant.viva i{background:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 30%,transparent)}
-#ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 28px;border-top:1px solid var(--bd);background:var(--card)}
+/* Va fija ABAJO (pedido de Christian: arriba empujaba toda la pantalla al aparecer). El contenido deja libre su alto (--ch). */
+#ctrl{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 28px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--bd);background:var(--card);box-shadow:0 -6px 18px rgba(0,0,0,.22);max-height:70vh;overflow-y:auto}
+#app{padding-bottom:var(--ch,0px)}
+.toast{margin-bottom:var(--ch,0px)}
 #ctrl .mini{flex:none;width:128px;border-radius:6px;overflow:hidden;border:1px solid var(--bd);background:#000}
 #ctrl .que{flex:1 1 220px;min-width:0}
 #ctrl .que b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -185,14 +188,14 @@ h2{font-size:16px;margin:0}
 
 @media (max-width:900px){
   .crear{grid-template-columns:minmax(0,1fr)}
-  .acciones{position:fixed;top:auto;left:0;right:0;bottom:0;z-index:30;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--bd);flex-wrap:nowrap;overflow-x:auto}
+  .acciones{position:fixed;top:auto;left:0;right:0;bottom:var(--ch,0px);z-index:30;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--bd);flex-wrap:nowrap;overflow-x:auto}
   .acciones #count{display:none}
   .acciones .bt{flex:none}
   .toast{bottom:84px}
 }
 @media (max-width:640px){
   .barra-in{padding:10px 14px}.tabs{padding:0 8px}
-  #ctrl{padding:8px 14px}#ctrl .mini{width:96px}#ctrl .que{flex-basis:140px}#cTira button{width:112px}#cTira .tx2{font-size:9px}
+  #ctrl{padding:8px 14px calc(8px + env(safe-area-inset-bottom))}#ctrl .mini{width:96px}#ctrl .que{flex-basis:140px}#cTira button{width:112px}#cTira .tx2{font-size:9px}
   main{padding:14px 14px 96px}
   .solo-pc{display:none!important}
   .bt{min-height:44px}
@@ -234,28 +237,29 @@ h2{font-size:16px;margin:0}
       <button data-tab="lista">Lista<span class="solo-pc"> de reproducción</span><span id="tLista"></span></button>
       <button data-tab="crear">Crear diapositivas</button>
     </nav>
-    <div id="ctrl" hidden>
-      <div class="mini" id="cMini"></div>
-      <div class="que"><b id="cNom"></b><span id="cTxt"></span><span id="cCola" hidden></span></div>
-      <div class="nav">
-        <button class="bt" id="cPrev" hidden title="Anterior de la lista" aria-label="Anterior de la lista">⏮</button>
-        <button class="bt" id="cAnt" title="Anterior (flecha izquierda)" aria-label="Diapositiva anterior">◀</button>
-        <span id="cNum"></span>
-        <button class="bt pri" id="cSig" title="Siguiente (flecha derecha o barra espaciadora)" aria-label="Diapositiva siguiente">▶</button>
-        <button class="bt" id="cNext" hidden title="Siguiente de la lista" aria-label="Siguiente de la lista">⏭</button>
-      </div>
-      <div class="vid" id="cVid" hidden>
-        <button class="bt pri" id="cPlay" title="Reproducir o pausar (barra espaciadora)" aria-label="Reproducir o pausar">⏸</button>
-        <button class="bt" id="cIni" title="Volver al inicio del video" aria-label="Volver al inicio del video">⟲</button>
-        <input type="range" id="cPos" min="0" max="1000" value="0" aria-label="Posición del video">
-        <span id="cTiempo"></span>
-        <button class="bt peq" id="cBucle" aria-pressed="false" title="Al terminar, el video empieza de nuevo">Repetir</button>
-      </div>
-      <button class="bt" id="cNegro" aria-pressed="false" title="Deja la pantalla en negro sin perder la diapositiva (tecla B)">Pantalla negra</button>
-      <button class="bt mal" id="cQuitar" title="Quita esto de la pantalla de proyección">Quitar</button>
-      <div id="cTira" hidden aria-label="Diapositivas"></div>
-    </div>
   </header>
+  <div id="ctrl" hidden>
+    <div class="mini" id="cMini"></div>
+    <div class="que"><b id="cNom"></b><span id="cTxt"></span><span id="cCola" hidden></span></div>
+    <div class="nav">
+      <button class="bt" id="cPrev" hidden title="Anterior de la lista" aria-label="Anterior de la lista">⏮</button>
+      <button class="bt" id="cAnt" title="Anterior (flecha izquierda)" aria-label="Diapositiva anterior">◀</button>
+      <span id="cNum"></span>
+      <button class="bt pri" id="cSig" title="Siguiente (flecha derecha o barra espaciadora)" aria-label="Diapositiva siguiente">▶</button>
+      <button class="bt" id="cNext" hidden title="Siguiente de la lista" aria-label="Siguiente de la lista">⏭</button>
+    </div>
+    <div class="vid" id="cVid" hidden>
+      <button class="bt pri" id="cPlay" title="Reproducir o pausar (barra espaciadora)" aria-label="Reproducir o pausar">⏸</button>
+      <button class="bt" id="cIni" title="Volver al inicio del video" aria-label="Volver al inicio del video">⟲</button>
+      <input type="range" id="cPos" min="0" max="1000" value="0" aria-label="Posición del video">
+      <span id="cTiempo"></span>
+      <button class="bt peq" id="cBucle" aria-pressed="false" title="Al terminar, el video empieza de nuevo">Repetir</button>
+    </div>
+    <button class="bt" id="cNegro" aria-pressed="false" title="Deja la pantalla en negro sin perder la diapositiva (tecla B)">Pantalla negra</button>
+    <button class="bt mal" id="cQuitar" title="Quita esto de la pantalla de proyección">Quitar</button>
+    <div id="cTira" hidden aria-label="Diapositivas"></div>
+  </div>
+
   <main>
     <!-- ================= Biblioteca ================= -->
     <section id="vLib" hidden>
@@ -1563,7 +1567,11 @@ $('#bPptx').onclick = e => {
 };
 
 /* La barra superior es fija: su alto se mide para que nada quede escondido debajo */
-function medirBarra() { const b = document.querySelector('.barra'); if (b && b.offsetHeight) document.documentElement.style.setProperty('--bh', b.offsetHeight + 'px'); }
+function medirBarra() {
+  const b = document.querySelector('.barra'), c = document.getElementById('ctrl');
+  if (b && b.offsetHeight) document.documentElement.style.setProperty('--bh', b.offsetHeight + 'px');
+  document.documentElement.style.setProperty('--ch', (c && !c.hidden ? c.offsetHeight : 0) + 'px');      // la franja de control va fija abajo
+}
 window.addEventListener('resize', medirBarra);
 
 /* ---------- Arranque ---------- */

@@ -161,6 +161,7 @@ h2{font-size:16px;margin:0}
 #cTira button i{position:absolute;left:4px;top:3px;z-index:1;font:600 10px 'IBM Plex Mono',monospace;font-style:normal;color:#fff;background:rgba(12,26,46,.78);border-radius:4px;padding:0 4px}
 #cTira .tx2{aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;padding:15px 8px 6px;background:#101b2b;color:#e8eef5;font-size:10.5px;line-height:1.25;text-align:center;white-space:pre-line;overflow:hidden}
 #cTira .tx2.sin{color:#7f93ab}
+#cTira img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}
 #print{display:none}
 
 /* Ventana */
@@ -679,7 +680,7 @@ function libRender() {
       d.appendChild(tg);
       if (it.t === 'p' && puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
     } else {
-      if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint: Google no deja mostrarlo diapositiva por diapositiva, así que se proyecta su letra con el estilo de Yupaletras. Impórtalo para dejarlo guardado con su fondo.'; d.appendChild(tg); }
+      if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint de Drive: se proyecta tal como es, con sus imágenes. Impórtalo si quieres cambiarle la letra o el fondo.'; d.appendChild(tg); }
       if (puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
     }
     if (puedeEditar()) op('＋', 'Agregar a la lista de reproducción', () => aLista(it.tipo === 'c' ? { k: 'c', id: it.c.id, n: it.name } : it.tipo === 'l' ? { k: 'l', t: it.t, r: it.x.r, n: it.name } : { k: 'd', id: it.id, t: it.t, n: it.name })).classList.add('mas');      // solo quien puede editar arma listas
@@ -709,19 +710,19 @@ $('#q').addEventListener('keydown', e => { if (e.key === 'Enter' && hallados.len
 function proyectar(it) {
   if (it.tipo === 'c') proyectarCancion({ titulo: it.c.titulo, autor: it.c.autor || '', letra: it.c.letra, estilo: estiloDe(it.c.estilo) }, 0);
   else if (it.tipo === 'l') { if (it.t === 'p') abrirVista(it); else proyectarLocal(it.x, it.name); }
-  else if (it.t === 'p' && !puedeEditar()) proyectarPptx(it);    // sin permiso de leer el archivo: va directo al visor de Drive
   else abrirVista(it);
 }
 
 /* Vista previa de una presentación de Drive: ver sus diapositivas y su letra antes de proyectarla,
    y desde ahí modificarla o duplicarla (las dos la traen a «Crear diapositivas»; el archivo de Drive no se toca). */
 function abrirVista(it) {
-  let n = 0, textos = null, S = null, deck = null, vivo = true;
+  let n = 0, textos = null, ids = null, S = null, deck = null, vivo = true;
   const velo = el('div', 'velo'), c = el('div', 'card vista');
   const cab = el('div', 'cab'); cab.appendChild(el('h2', '', it.name));
   const x = el('button', 'bt peq', '✕'); x.title = 'Cerrar'; x.setAttribute('aria-label', 'Cerrar'); x.onclick = cerrarModal; cab.appendChild(x); c.appendChild(cab);
-  const pc = it.tipo === 'l', lee = pc || puedeEditar(), nocambia = pc ? 'El archivo de la computadora no cambia.' : 'El archivo de Drive no cambia.';
-  c.appendChild(el('div', 'dim', pc ? 'PowerPoint de esta computadora: se proyecta su letra con el estilo de Yupaletras' + (it.x.c ? ' · ' + it.x.c : '') : it.t === 's' ?'Presentación de Google en Drive' + (it.sub ? ' · ' + it.sub : '') : 'PowerPoint en Drive: se proyecta su letra con el estilo de Yupaletras' + (it.sub ? ' · ' + it.sub : '')));
+  const pc = it.tipo === 'l', real = !pc;      // real: lo de Drive (de Google o PowerPoint) se muestra tal como es, con sus imágenes
+  const lee = pc || puedeEditar(), nocambia = pc ? 'El archivo de la computadora no cambia.' : 'El archivo de Drive no cambia.';
+  c.appendChild(el('div', 'dim', pc ? 'PowerPoint de esta computadora: se proyecta su letra con el estilo de Yupaletras' + (it.x.c ? ' · ' + it.x.c : '') : (it.t === 's' ? 'Presentación de Google en Drive' : 'PowerPoint en Drive: se proyecta tal como es') + (it.sub ? ' · ' + it.sub : '')));
   const g = el('div', 'vgrid'), izq = el('div'), marco = el('div', 'vmarco'), nav = el('div', 'vnav'), lista = el('div', 'vlista');
   const ant = el('button', 'bt', '◀'), num = el('span'), sig = el('button', 'bt', '▶');
   ant.setAttribute('aria-label', 'Diapositiva anterior'); sig.setAttribute('aria-label', 'Diapositiva siguiente');
@@ -735,10 +736,10 @@ function abrirVista(it) {
   if (puedeEditar()) { pie.appendChild(bMod); pie.appendChild(bDup); }
   pie.appendChild(bPro); c.appendChild(pie); velo.appendChild(c);
 
-  const total = () => it.t === 's' ? (textos ? textos.length : 0) : (deck ? deck.length : 0);
+  const total = () => real ? (textos ? textos.length : 0) : (deck ? deck.length : 0);
   function pintar() {
     marco.textContent = '';
-    if (it.t === 's') {      // la diapositiva real, traída de Drive
+    if (real) {      // la diapositiva real, traída de Drive
       const f = el('iframe'); f.title = 'Vista previa'; f.setAttribute('tabindex', '-1'); f.src = baseDocs(it.id) + '#slide=' + (n + 1);
       marco.appendChild(f); marco.appendChild(el('div', 'vtapa'));
     } else if (S) { estilar(marco, S.estilo); marco.appendChild(frameEl(S, deck[n])); }
@@ -756,10 +757,9 @@ function abrirVista(it) {
   velo.addEventListener('mousedown', e => { if (e.target === velo) cerrarModal(); });
   bPro.onclick = () => {
     cerrarModal();
-    if (it.t === 's') proyectarDrive(baseDocs(it.id), it.name, it.id, { i: n, textos });
+    if (real) proyectarDrive(baseDocs(it.id), it.name, it.id, { i: n, textos, ids });
     else if (S) proyectarCancion(S, n, it.name);
-    else if (pc) proyectarLocal(it.x, it.name);
-    else proyectarPptx(it);
+    else proyectarLocal(it.x, it.name);
   };
   const traer = copia => {
     if (!diapos) return;
@@ -776,11 +776,11 @@ function abrirVista(it) {
   if (lee) (pc ? archivoLocal(it.x).then(YLCarpeta.leerPptx) : drive({ accion: 'importar', id: it.id })).then(d => {
     if (!vivo) return;
     diapos = (d.diapos || []).filter(l => Array.isArray(l) && l.length);
-    if (it.t === 's') { textos = Array.isArray(d.todas) ? d.todas : diapos; llenar(textos.map(l => (l || []).join('\n'))); }
+    if (real) { textos = Array.isArray(d.todas) ? d.todas : diapos; ids = Array.isArray(d.ids) ? d.ids : null; llenar(textos.map(l => (l || []).join('\n'))); }
     else {
       const letra = letraDe(diapos, it.name);
       if (letra) { S = { titulo: it.name, autor: '', letra, estilo: Object.assign({}, ed.estilo) }; deck = allSlides(S); llenar(deck.map(s => s.type === 'title' ? 'Título: ' + it.name : s.type === 'blank' ? '' : s.lines.join('\n'))); }
-      else { lista.textContent = ''; lista.appendChild(el('div', 'dim', 'Este PowerPoint no tiene texto que se pueda leer (quizá la letra está puesta como imagen). ' + (pc ? 'No se puede proyectar desde aquí.' : 'Se proyectará en el visor de Drive.'))); if (pc) bPro.disabled = true; }
+      else { lista.textContent = ''; lista.appendChild(el('div', 'dim', 'Este PowerPoint no tiene texto que se pueda leer (quizá la letra está puesta como imagen). No se puede proyectar desde aquí: súbelo a la carpeta de Drive y se verá tal como es.')); bPro.disabled = true; }
     }
     bMod.disabled = bDup.disabled = !diapos.length; pintar();
   }).catch(e => { if (!vivo) return; lista.textContent = ''; lista.appendChild(el('div', 'dim', 'No se pudo leer la letra: ' + (e.message || 'error') + ' Igual puedes proyectarla.')); });
@@ -1065,7 +1065,7 @@ function colaIr(l, i, alFinal) {
     colaPend = pend; proyectarCancion({ titulo: c.titulo, autor: c.autor || '', letra: c.letra, estilo: estiloDe(c.estilo) }, alFinal ? 9999 : 0, null, tk);
   } else if (x.k === 'd') {
     colaPend = pend;
-    if (x.t === 's') proyectarDrive(baseDocs(x.id), x.n, x.id, null, tk); else proyectarPptx({ id: x.id, name: x.n }, tk);
+    proyectarDrive(baseDocs(x.id), x.n, x.id, null, tk);
   } else if (x.k === 'l') {
     const y = enLocal(x);
     if (!y) { toast(local.estado === 'pide' ? 'Primero permite leer la carpeta de la computadora (en la Biblioteca).' : '«' + x.n + '» no está en la carpeta de este equipo. Elige la carpeta en la Biblioteca o quítalo de la lista.'); return; }
@@ -1346,7 +1346,7 @@ function varsDe(E) {
 function enviar() {      // manda a la pantalla el estado completo (sirve también si la pantalla se abre o recarga después)
   if (!pr) { decir({ t: 'nada' }); return; }
   // prox: si la lista sigue con una presentación de Google, la pantalla la va cargando para que el salto sea instantáneo
-  const p = colaPos(), x = p >= 0 ? cola.l.items[p + 1] : null, prox = x && x.k === 'd' && x.t === 's' ? baseDocs(x.id) : null;
+  const p = colaPos(), x = p >= 0 ? cola.l.items[p + 1] : null, prox = x && x.k === 'd' ? baseDocs(x.id) : null;
   if (pr.tipo === 'cancion') { const v = videoDe(pr.S.estilo); decir({ t: 'cancion', vars: varsDe(pr.S.estilo), partes: partesDe(pr.S, pr.deck[pr.i]), negro: pr.negro, prox,
     video: v ? { id: v.id, osc: Math.max(0, Math.min(85, +pr.S.estilo.overlay || 0)) / 100 } : null }); }
   else if (pr.tipo === 'drive') decir({ t: 'drive', base: pr.base, n: pr.i + 1, total: pr.total || 0, negro: pr.negro, prox });
@@ -1376,19 +1376,30 @@ $('#cIni').onclick = () => vIr(0);
 $('#cBucle').onclick = () => { if (!pr || pr.tipo !== 'video') return; pr.bucle = !pr.bucle; enviar(); pintarVid(); };
 $('#cPos').addEventListener('input', e => { arrastre = Date.now(); if (pr && pr.tipo === 'video' && pr.dur) vIr(e.target.value / 1000 * pr.dur); });
 /* Tira de miniaturas del control: se ve lo que viene y lo que pasó, y con un clic se salta a cualquiera.
-   Canciones: la diapositiva tal como sale. Presentaciones de Google: el texto de cada una (su imagen solo la tiene Google). */
+   Canciones: la diapositiva tal como sale. Lo de Drive: la imagen real de cada diapositiva (la da Google con el id de cada una,
+   que trae la función yl-drive en `ids`); si no se supieron los ids o la imagen no carga, queda el texto de la diapositiva. */
+const idDiapo = x => typeof x === 'string' && /^[\w.-]{1,80}$/.test(x);
 let tiraDe = null;
 function pintarTira() {
   const t = $('#cTira'), n = !pr ? 0 : pr.tipo === 'cancion' ? pr.deck.length : pr.tipo === 'drive' && pr.textos ? pr.textos.length : 0;
   t.hidden = n < 2;
   if (n < 2) { t.textContent = ''; tiraDe = null; return; }
   if (pr.tipo === 'cancion') estilar(t, pr.S.estilo);
-  if (tiraDe !== pr || t.children.length !== n) {
-    tiraDe = pr; t.textContent = '';
+  // Un id por diapositiva; si no cuadran con las diapositivas, mejor el texto que una imagen equivocada
+  const conFoto = pr.tipo === 'drive' && okId(pr.did) && Array.isArray(pr.ids) && pr.ids.length === n;
+  if (tiraDe !== pr || t.children.length !== n || t.dataset.foto !== String(conFoto)) {
+    tiraDe = pr; t.textContent = ''; t.dataset.foto = String(conFoto);
     for (let i = 0; i < n; i++) {
       const b = el('button'); b.appendChild(el('i', '', String(i + 1)));
       if (pr.tipo === 'cancion') b.appendChild(frameEl(pr.S, pr.deck[i]));
-      else { const l = pr.textos[i], hay = l && l.length; b.appendChild(el('div', 'tx2' + (hay ? '' : ' sin'), hay ? l.join('\n') : 'Sin texto')); }
+      else {
+        const l = pr.textos[i], hay = l && l.length, tx = el('div', 'tx2' + (hay ? '' : ' sin'), hay ? l.join('\n') : 'Sin texto');
+        if (conFoto && idDiapo(pr.ids[i])) {
+          const im = el('img'); im.loading = 'lazy'; im.decoding = 'async'; im.referrerPolicy = 'no-referrer'; im.draggable = false; im.alt = hay ? l.join(' / ') : 'Diapositiva sin texto';
+          im.onerror = () => im.replaceWith(tx);
+          im.src = DOCS + pr.did + '/export/jpeg?pageid=' + encodeURIComponent(pr.ids[i]); b.appendChild(im);
+        } else b.appendChild(tx);
+      }
       b.title = 'Ir a la diapositiva ' + (i + 1); b.setAttribute('aria-label', 'Ir a la diapositiva ' + (i + 1)); b.onclick = () => ir(i, true);
       t.appendChild(b);
     }
@@ -1458,30 +1469,18 @@ function proyectarCancion(S, i, nombre, tk) {
 function proyectarDrive(base, nombre, id, desde, tk) {
   if (!asegurarPantalla()) return;
   const tx = desde && Array.isArray(desde.textos) ? desde.textos : null;
-  poner({ tipo: 'drive', base, total: tx ? tx.length : 0, textos: tx, nombre, i: desde ? Math.max(0, desde.i || 0) : 0, tk });
+  poner({ tipo: 'drive', base, did: id, total: tx ? tx.length : 0, textos: tx, ids: desde && Array.isArray(desde.ids) ? desde.ids : null, nombre, i: desde ? Math.max(0, desde.i || 0) : 0, tk });
   if (tx) return;
   const actual = pr;
   // En segundo plano: cuántas diapositivas tiene y qué dice cada una, para el contador y la vista del control
   if (id && puedeEditar()) drive({ accion: 'importar', id }).then(d => {
     if (pr !== actual || !Array.isArray(d.todas)) return;
-    actual.textos = d.todas; actual.total = d.todas.length;
+    actual.textos = d.todas; actual.total = d.todas.length; actual.ids = Array.isArray(d.ids) ? d.ids : null;
     if (actual.i > actual.total - 1) actual.i = actual.total - 1;
     enviar(); pintarCtrl();      // la pantalla, al saber cuántas son, carga más diapositivas de antemano
   }).catch(() => { });
 }
 function proyectarVisor(url, nombre) { if (asegurarPantalla()) poner({ tipo: 'visor', url, nombre }); }
-async function proyectarPptx(it, tk) {      // PowerPoint de Drive: se proyecta su letra con el estilo actual
-  if (!puedeEditar()) { if (asegurarPantalla()) poner({ tipo: 'visor', url: 'https://drive.google.com/file/d/' + it.id + '/preview', nombre: it.name, tk }); return; }
-  if (!asegurarPantalla()) return;
-  toast('Preparando «' + it.name + '»…');
-  try {
-    const d = await drive({ accion: 'importar', id: it.id });
-    if (tk && !(colaPend && colaPend.tk === tk)) return;      // mientras se preparaba, se proyectó otra cosa
-    const letra = letraDe(d.diapos, it.name);
-    if (letra) proyectarCancion({ titulo: it.name, autor: '', letra, estilo: Object.assign({}, ed.estilo) }, 0, it.name, tk);
-    else poner({ tipo: 'visor', url: 'https://drive.google.com/file/d/' + it.id + '/preview', nombre: it.name, tk });
-  } catch (e) { toast(e.message || 'No se pudo preparar esa presentación'); }
-}
 function tecla(k) {
   if (!pr) return false;
   if (pr.tipo === 'video' && k !== 'b' && k !== 'B' && k !== '.') {      // en un video: espacio pausa, las flechas saltan 10 segundos

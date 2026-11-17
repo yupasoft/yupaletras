@@ -99,8 +99,12 @@ h2{font-size:16px;margin:0}
 #pgrid .pz.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
 #pgrid .pz.on .nu{color:var(--acc)}
 .pie{margin-top:22px;padding-top:14px;border-top:1px solid var(--bd)}
-.pie .fila{margin-top:10px}
-.pie .busca{flex:1 1 280px;max-width:640px;font-size:15px;min-height:42px}
+/* Menú del botón «Drive»: una nube con sus dos opciones */
+.menu{position:fixed;z-index:60;min-width:270px;max-width:calc(100vw - 16px);padding:6px;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sombra)}
+.menu::before{content:"";position:absolute;top:-7px;right:26px;width:12px;height:12px;background:var(--card);border-left:1px solid var(--bd);border-top:1px solid var(--bd);transform:rotate(45deg)}
+.menu button{position:relative;display:block;width:100%;padding:10px 12px;border:0;border-radius:9px;background:transparent;color:var(--tx);text-align:left;font-weight:600;font-size:14.5px}
+.menu button:hover,.menu button:focus-visible{background:var(--card2)}
+.menu button small{display:block;margin-top:2px;color:var(--mute);font-weight:400;font-size:12.5px}
 
 /* Crear */
 .crear{display:grid;grid-template-columns:400px minmax(0,1fr);gap:20px;align-items:start}
@@ -272,7 +276,7 @@ h2{font-size:16px;margin:0}
         <input type="file" id="fPv" accept="video/*,.mp4,.m4v,.webm,.mov,.mkv" hidden>
         <button class="bt" id="bVent" hidden title="Muestra en la pantalla de proyección una ventana de esta computadora: una llamada de Zoom o Meet, un PowerPoint abierto, una pestaña con Canva…">🖥 Mostrar una ventana</button>
         <button class="bt" id="bAct" title="Vuelve a leer la carpeta de Drive">↻ Actualizar</button>
-        <button class="bt" id="bCarp">Carpeta de Drive</button>
+        <button class="bt" id="bCarp" aria-haspopup="menu" title="La carpeta de Drive de la organización y proyectar una presentación por su enlace">☁ Drive ▾</button>
         <button class="bt" id="bLocal" hidden title="Elige una carpeta de esta computadora o de la red: se leen sus fotos y videos">Carpeta de la computadora</button>
       </div>
       <div class="fila" id="lpc" hidden><span class="dim" id="lpcT"></span><button class="bt pri" id="lpcB">Permitir</button></div>
@@ -280,10 +284,6 @@ h2{font-size:16px;margin:0}
       <div id="laviso"></div>
       <div class="pie">
         <div class="dim" id="linfo"></div>
-        <div class="fila">
-          <input class="busca" type="url" id="gUrl" placeholder="O pega aquí el enlace de otra presentación de Drive">
-          <button class="bt" id="gGo">Proyectar enlace</button>
-        </div>
       </div>
     </section>
 
@@ -688,7 +688,6 @@ function libRender() {
   }
   $('#lcount').textContent = todos.length ? hallados.length + ' de ' + todos.length : '';
   $('#bAct').hidden = !(D.carpeta && puedeEditar());
-  $('#bCarp').hidden = !puedeTodo();
   $('#bLocal').hidden = !(window.YLCarpeta && YLCarpeta.disponible);
   $('#lpc').hidden = local.estado !== 'pide';
   if (local.estado === 'pide') $('#lpcT').textContent = 'La carpeta «' + local.nombre + '» de esta computadora necesita tu permiso para leerse otra vez.';
@@ -812,7 +811,43 @@ async function guardarCarpeta(enlace, boton) {
     if (D.carpeta) await actualizar($('#bAct')); else toast('Carpeta desconectada');
   });
 }
-$('#bCarp').onclick = abrirCarpeta;
+/* Botón «Drive»: abre una nube con dos opciones. La carpeta solo la cambia el Responsable; proyectar un enlace, cualquiera. */
+function cerrarMenu() { const m = $('#mDrive'); if (m) m.remove(); document.removeEventListener('mousedown', fueraMenu, true); }
+function fueraMenu(e) { const m = $('#mDrive'); if (m && !m.contains(e.target) && !$('#bCarp').contains(e.target)) cerrarMenu(); }
+function menuDrive() {
+  if ($('#mDrive')) { cerrarMenu(); return; }
+  const m = el('div', 'menu'); m.id = 'mDrive'; m.setAttribute('role', 'menu');
+  const op = (id, txt, sub, fn) => { const b = el('button', '', txt); b.id = id; b.setAttribute('role', 'menuitem'); b.appendChild(el('small', '', sub)); b.onclick = () => { cerrarMenu(); fn(); }; m.appendChild(b); };
+  if (puedeTodo()) op('mdCarp', 'Subir link de carpeta Drive', D.carpeta ? 'Cambiar o desconectar la carpeta de la organización' : 'Conectar la carpeta donde están las presentaciones', abrirCarpeta);
+  op('mdLink', 'Proyectar link de presentación Drive', 'Una presentación que no está en la carpeta', abrirEnlace);
+  document.body.appendChild(m);
+  const r = $('#bCarp').getBoundingClientRect();
+  m.style.top = (r.bottom + 10) + 'px'; m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+  document.addEventListener('mousedown', fueraMenu, true); m.firstChild.focus();
+}
+$('#bCarp').onclick = menuDrive;
+window.addEventListener('resize', cerrarMenu);
+function abrirEnlace() {
+  const velo = el('div', 'velo'), c = el('div', 'card');
+  c.appendChild(el('h2', '', 'Proyectar link de presentación Drive'));
+  c.appendChild(el('p', 'dim', 'Pega el enlace de una presentación de Google Drive (en Drive: Compartir → Copiar enlace). Tiene que estar compartida con «Cualquier persona que tenga el enlace». Sirve para proyectar algo que no está en la carpeta.'));
+  const campo = el('div', 'campo'), lb = el('label', '', 'Enlace de la presentación'), inp = el('input');
+  inp.type = 'url'; inp.id = 'gUrl'; lb.htmlFor = 'gUrl'; inp.placeholder = 'https://docs.google.com/presentation/d/…'; inp.autocomplete = 'off';
+  campo.appendChild(lb); campo.appendChild(inp); c.appendChild(campo);
+  const f = el('div', 'fila');
+  const x = el('button', 'bt', 'Cancelar'); x.onclick = cerrarModal; f.appendChild(x);
+  const g = el('button', 'bt pri', '▶ Proyectar'); g.id = 'gGo';
+  g.onclick = () => {
+    const r = driveUrls(inp.value.trim());
+    if (!r) { toast('Ese enlace no parece de una presentación de Google Drive'); return; }
+    cerrarModal();
+    if (r.base) proyectarDrive(r.base, 'Enlace de Drive', null); else proyectarVisor(r.visor, 'Archivo de Drive');
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') g.click(); });
+  f.appendChild(g); c.appendChild(f); velo.appendChild(c);
+  velo.addEventListener('mousedown', e => { if (e.target === velo) cerrarModal(); });
+  $('#modal').textContent = ''; $('#modal').appendChild(velo); inp.focus();
+}
 
 /* Carpeta de esta computadora (o de la red, por ejemplo la del servidor): carpeta.js. Se leen solo fotos y videos
    (los PowerPoint van en la carpeta de Drive, donde se proyectan tal como son).
@@ -902,11 +937,6 @@ async function importar(it, boton) {
   });
 }
 
-$('#gGo').onclick = () => {
-  const r = driveUrls($('#gUrl').value.trim());
-  if (!r) { toast('Ese enlace no parece de una presentación de Google Drive'); return; }
-  if (r.base) proyectarDrive(r.base, 'Enlace de Drive', null); else proyectarVisor(r.visor, 'Archivo de Drive');
-};
 
 /* =====================================================================
    LISTA DE REPRODUCCIÓN: varias canciones en el orden en que se van a presentar, para pasarlas de corrido.
@@ -1454,7 +1484,7 @@ function pintarCtrl() {
     $('#cNum').textContent = (pr.i + 1) + (pr.total ? ' / ' + pr.total : '');
   } else if (pr.tipo === 'foto') { txt = 'Foto de esta computadora'; $('#cNum').textContent = (pr.i + 1) + ' / ' + pr.serie.length; }
   else if (pr.tipo === 'ventana') { txt = 'En vivo desde esta computadora · el sonido sale por su propio programa · no minimices esa ventana'; $('#cNum').textContent = ''; }
-  else { txt = 'Se desplaza en la propia pantalla de proyección'; $('#cNum').textContent = ''; }
+  else { txt = 'Se maneja en la propia pantalla de proyección: haz clic ahí y pasa con sus flechas'; $('#cNum').textContent = ''; }
   $('#cTxt').textContent = pr.negro ? 'Pantalla en negro' : txt;
   const nav = pr.tipo === 'cancion' || pr.tipo === 'drive' || pr.tipo === 'foto'; $('#cAnt').hidden = !nav; $('#cSig').hidden = !nav; $('#cNum').hidden = !nav;
   $('#cVid').hidden = pr.tipo !== 'video'; pintarVid();
@@ -1537,7 +1567,7 @@ $('#cSig').onclick = () => ir(pr.i + 1);
 $('#cNegro').onclick = () => { if (!pr) return; pr.negro = !pr.negro; enviar(); pintarCtrl(); };
 $('#cQuitar').onclick = quitar;
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if ($('#modal').firstChild) cerrarModal(); return; }
+  if (e.key === 'Escape') { if ($('#mDrive')) cerrarMenu(); else if ($('#modal').firstChild) cerrarModal(); return; }
   if (!pr || $('#modal').firstChild || e.ctrlKey || e.altKey || e.metaKey) return;
   const t = e.target, tag = t && t.tagName;      // escribiendo o sobre un botón, las teclas son de ese control
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || ((tag === 'BUTTON' || tag === 'A') && (e.key === ' ' || e.key === 'Enter'))) return;

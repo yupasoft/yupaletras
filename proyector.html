@@ -161,11 +161,12 @@ function siguiente(base) {      // la presentación que sigue en la lista de rep
 }
 
 /* ---------- Otro archivo de Drive (visor de Google): se maneja en esta misma ventana ---------- */
+const esVisor = u => typeof u === 'string' && /^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/preview$/.test(u);
 function quitarVisor() { const v = $('visor'); if (v) v.remove(); $('tapa').hidden = false; }
 function visor(m) {
-  if (typeof m.url !== 'string' || !/^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/preview$/.test(m.url)) return;
+  if (!esVisor(m.url)) return;
   quitarVideo(); quitarPeli(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
-  const f = document.createElement('iframe'); f.id = 'visor'; f.title = 'Archivo de Drive'; f.src = m.url;
+  const f = document.createElement('iframe'); f.id = 'visor'; f.title = 'Presentación'; f.allow = 'fullscreen; autoplay'; f.src = m.url;
   $('esc').appendChild(f); $('tapa').hidden = true;      // sin tapa: hay que poder desplazarlo aquí
 }
 

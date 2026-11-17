@@ -18,6 +18,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
   background:var(--sbg,#000);color:var(--stx,#fff);font-family:var(--sff,Arial),Arial,sans-serif;font-weight:var(--sfw,700);text-align:var(--sal,center);text-shadow:var(--ssh,none)}
 .slide .tx{white-space:pre;line-height:1.25;font-size:calc(var(--fs) * 0.078125cqw)}
 .slide .au{margin-top:2cqw;opacity:.85;font-weight:400}
+/* Letra negra con resaltado blanco en cada línea (igual que en index.html) */
+.slide.rs{text-shadow:none}
+.slide.rs .tx span{background:#fff;color:#000;padding:.06em .22em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 /* El fondo va en el marco, que no se vuelve a crear al cambiar de diapositiva: así un fondo con movimiento no se reinicia */
 #stage{position:relative;background:var(--sbg,#000)}
 #stage .slide{position:relative;z-index:2;background:transparent}
@@ -100,9 +103,9 @@ function cancion(m) {
   const st = $('stage'); st.querySelectorAll('.slide').forEach(x => x.remove());
   ponerVideo(m.video);
   VARS.forEach(k => { const v = m.vars && m.vars[k]; if (typeof v === 'string' && puesto[k] !== v) { puesto[k] = v; st.style.setProperty(k, v); } });      // el fondo no se vuelve a poner si es el mismo
-  const d = document.createElement('div'); d.className = 'slide';
+  const d = document.createElement('div'); d.className = 'slide' + (m.rs ? ' rs' : '');
   for (const p of (m.partes || [])) {
-    const t = document.createElement('div'); t.className = 'tx' + (p.au ? ' au' : ''); t.textContent = String(p.txt || '');
+    const t = document.createElement('div'); t.className = 'tx' + (p.au ? ' au' : ''); const sp = document.createElement('span'); sp.textContent = String(p.txt || ''); t.appendChild(sp);
     t.style.setProperty('--fs', +p.fs || 40); d.appendChild(t);
   }
   st.appendChild(d);

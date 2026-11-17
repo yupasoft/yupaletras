@@ -134,6 +134,9 @@ h2{font-size:16px;margin:0}
   background:var(--sbg,#000);color:var(--stx,#fff);font-family:var(--sff,Arial),Arial,sans-serif;font-weight:var(--sfw,700);text-align:var(--sal,center);text-shadow:var(--ssh,none)}
 .slide .tx{white-space:pre;line-height:1.25;font-size:calc(var(--fs) * 0.078125cqw)}
 .slide .au{margin-top:2cqw;opacity:.85;font-weight:400}
+/* Letra negra con resaltado blanco en cada línea, como las presentaciones de Drive de la iglesia (estilo.resalte) */
+.slide.rs{text-shadow:none}
+.slide.rs .tx span{background:#fff;color:#000;padding:.06em .22em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 
 /* Control de lo que está en la pantalla de proyección */
 #bPant i{width:9px;height:9px;border-radius:50%;background:var(--mute);flex:none}
@@ -344,11 +347,12 @@ h2{font-size:16px;margin:0}
             <div class="campo"><label for="fAl">Alineación</label>
               <select id="fAl" data-e="align"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></div>
           </div>
-          <div class="campo"><label for="fSize">Tamaño máximo de letra</label><input id="fSize" type="range" data-e="size" min="40" max="160"></div>
-          <div class="dim">Si una línea es muy larga, se parte o se achica sola para que entre.</div>
+          <div class="campo"><label for="fSize">Tamaño de letra</label><input id="fSize" type="range" data-e="size" min="40" max="160"></div>
+          <div class="dim">Todas las diapositivas de letra salen con el mismo tamaño; el título va siempre grande. Si una línea no entra, se parte en dos; si aun así no entra, la letra se achica en todas por igual.</div>
           <label class="marcar"><input type="checkbox" data-e="bold">Negrita</label>
           <label class="marcar"><input type="checkbox" data-e="upper">Todo en mayúsculas</label>
           <label class="marcar"><input type="checkbox" data-e="shadow">Sombra en el texto</label>
+          <label class="marcar"><input type="checkbox" data-e="resalte">Letra negra con resaltado blanco (como las de Drive)</label>
         </aside>
         <div>
           <div class="fila acciones">
@@ -397,7 +401,7 @@ const SINPERMISO = 'No tienes permiso para hacer eso. Pídeselo al Responsable d
 /* ---------- Estado ---------- */
 let ses = null, P = null, acceso = 'ver', tab = 'lib';
 let D = { carpeta: null, lista: [], lista_el: null, lista_por: null, canciones: [], fondos: [] };
-const EST0 = { maxLines: 6, hideLabels: true, titleSlide: true, endBlank: true, font: 'Arial', bold: true, upper: false, shadow: true,
+const EST0 = { maxLines: 6, hideLabels: true, titleSlide: true, endBlank: true, font: 'Arial', bold: true, upper: false, shadow: true, resalte: false,
   align: 'center', size: 96, textColor: '#ffffff', bgMode: 'color', c1: '#000000', c2: '#000000', fondo: null, escena: null, mov: true, video: null, videoNombre: null, overlay: 40 };
 const estiloDe = e => Object.assign({}, EST0, e && typeof e === 'object' ? e : {});
 let ed = { id: null, titulo: '', autor: '', letra: '', estilo: estiloDe() }, sucio = false;
@@ -562,8 +566,9 @@ function fit(E, lines, cap, reserva) {
   const mw = medir(E); let m = 1; for (const l of lines) m = Math.max(m, mw(l));
   return Math.max(10, Math.min(cap, AW / m * 100 * 0.98, (AH - (reserva || 0)) / (lines.length * 1.25)));
 }
-function wrap(E, lines) {      // una línea que obligaría a letra muy chica se parte en dos o más
-  const mw = medir(E), lim = AW / 56 * 100, out = [];
+const wrap = (E, lines) => partir(medir(E), lines, AW / 56 * 100);      // una línea que obligaría a letra muy chica se parte en dos o más
+function partir(mw, lines, lim) {      // lim = ancho máximo de una línea (medido con letra de 100 px)
+  const out = [];
   for (const l of lines) {
     const w = mw(l);
     if (w <= lim) { out.push(l); continue; }
@@ -578,7 +583,23 @@ function wrap(E, lines) {      // una línea que obligaría a letra muy chica se
 }
 function titleSizes(S) {
   const au = String(S.autor || '').trim() ? 40 : 0, L = wrap(S.estilo, [String(S.titulo).trim()]);
-  return { L, t: fit(S.estilo, L, Math.min(150, S.estilo.size * 1.2), au ? au * 1.25 + 26 : 0), a: au };
+  return { L, t: fit(S.estilo, L, 150, au ? au * 1.25 + 26 : 0), a: au };      // el título va siempre grande: no depende del tamaño elegido para la letra
+}
+/* Letra: TODAS las diapositivas de letra de una canción llevan el mismo tamaño (pedido de Christian, 2026-11-16: antes cada una
+   se ajustaba sola y unas salían más grandes que otras). El tamaño es el elegido en «Tamaño de letra»; una línea que no entra a ese
+   tamaño se parte, y solo si aun así alguna diapositiva no entra se baja el tamaño, en todas por igual.
+   plan(S) → { fs, L: [líneas ya partidas de cada diapositiva de letra] }. Se guarda calculado: se pide por cada diapositiva. */
+const planes = new Map();
+function plan(S) {
+  const E = S.estilo, k = JSON.stringify([S.letra, E.maxLines, E.hideLabels, E.font, E.bold, E.upper, E.size]);
+  let p = planes.get(k); if (p) return p;
+  const ls = lyricSlides(S), mw = medir(E), ancho = AW * 0.98;
+  let fs = Math.max(10, Math.min(160, Math.round(+E.size || 96))), L = ls;
+  for (; ; fs -= 2) {
+    L = ls.map(l => partir(mw, l, ancho / fs * 100));
+    if (fs <= 10 || L.every(x => x.length * 1.25 * fs <= AH && x.every(t => mw(t) * fs / 100 <= ancho))) break;
+  }
+  p = { fs, L }; if (planes.size > 30) planes.clear(); planes.set(k, p); return p;
 }
 
 /* ---------- Fondos ---------- */
@@ -615,7 +636,7 @@ function estilar(caja, E) {      // el estilo de la canción viaja como variable
 }
 function partesDe(S, s) {      // [{txt, fs, au}] · lo que lleva escrito una diapositiva
   const E = S.estilo;
-  if (s.type === 'lyrics') { const L = wrap(E, s.lines); return [{ txt: shown(E, L.join('\n')), fs: fit(E, L, E.size) }]; }
+  if (s.type === 'lyrics') { const p = plan(S), L = p.L[s.li] || wrap(E, s.lines); return [{ txt: shown(E, L.join('\n')), fs: p.fs }]; }
   if (s.type === 'title') {
     const z = titleSizes(S), r = [{ txt: shown(E, z.L.join('\n')), fs: z.t }];
     if (z.a) r.push({ txt: String(S.autor).trim(), fs: z.a, au: true });
@@ -624,8 +645,8 @@ function partesDe(S, s) {      // [{txt, fs, au}] · lo que lleva escrito una di
   return [];
 }
 function slideEl(S, s) {
-  const d = el('div', 'slide');
-  for (const x of partesDe(S, s)) { const t = el('div', 'tx' + (x.au ? ' au' : ''), x.txt); t.style.setProperty('--fs', x.fs); d.appendChild(t); }
+  const d = el('div', 'slide' + (S.estilo.resalte ? ' rs' : ''));
+  for (const x of partesDe(S, s)) { const t = el('div', 'tx' + (x.au ? ' au' : '')); t.appendChild(el('span', '', x.txt)); t.style.setProperty('--fs', x.fs); d.appendChild(t); }      // el span es para el resaltado por línea
   return d;
 }
 function frameEl(S, s) { const f = el('div', 'frame'); f.appendChild(slideEl(S, s)); return f; }
@@ -1408,7 +1429,7 @@ function enviar() {      // manda a la pantalla el estado completo (sirve tambi�
   if (!pr) { decir({ t: 'nada' }); return; }
   // prox: si la lista sigue con una presentación de Google, la pantalla la va cargando para que el salto sea instantáneo
   const p = colaPos(), x = p >= 0 ? cola.l.items[p + 1] : null, prox = x && x.k === 'd' ? baseDocs(x.id) : null;
-  if (pr.tipo === 'cancion') { const v = videoDe(pr.S.estilo); decir({ t: 'cancion', vars: varsDe(pr.S.estilo), partes: partesDe(pr.S, pr.deck[pr.i]), negro: pr.negro, prox,
+  if (pr.tipo === 'cancion') { const v = videoDe(pr.S.estilo); decir({ t: 'cancion', vars: varsDe(pr.S.estilo), partes: partesDe(pr.S, pr.deck[pr.i]), rs: !!pr.S.estilo.resalte, negro: pr.negro, prox,
     video: v ? { id: v.id, osc: Math.max(0, Math.min(85, +pr.S.estilo.overlay || 0)) / 100 } : null }); }
   else if (pr.tipo === 'drive') decir({ t: 'drive', base: pr.base, n: pr.i + 1, total: pr.total || 0, negro: pr.negro, prox });
   else if (pr.tipo === 'video') { try { decir({ t: 'video', archivo: pr.archivo, vk: pr.vk, pausa: pr.pausa, bucle: pr.bucle, negro: pr.negro, prox }); } catch (e) { toast('No se pudo mandar el video a la pantalla de proyección.'); } }
@@ -1610,10 +1631,11 @@ async function buildPptx(S) {
   const p = new PptxGenJS(); p.layout = 'LAYOUT_WIDE';
   p.title = String(S.titulo || '').trim() || 'Letra'; if (String(S.autor || '').trim()) p.author = String(S.autor).trim();
   const bg = await pptxBg(E);
-  const caja = { x: 0.8, y: 0.6, w: 11.733, h: 6.3, margin: 0, align: E.align, valign: 'middle', fontFace: E.font, color: hex(E.textColor), bold: !!E.bold, fit: 'shrink' };
+  const caja = { x: 0.8, y: 0.6, w: 11.733, h: 6.3, margin: 0, align: E.align, valign: 'middle', fontFace: E.font, color: E.resalte ? '000000' : hex(E.textColor), bold: !!E.bold, fit: 'shrink' };
+  if (E.resalte) caja.highlight = 'FFFFFF';
   for (const s of allSlides(S)) {
     const sl = p.addSlide(); sl.background = bg;
-    if (s.type === 'lyrics') { const L = wrap(E, s.lines); sl.addText(shown(E, L.join('\n')), Object.assign({ fontSize: pt(fit(E, L, E.size)) }, caja)); }
+    if (s.type === 'lyrics') { const q = plan(S), L = q.L[s.li] || wrap(E, s.lines); sl.addText(shown(E, L.join('\n')), Object.assign({ fontSize: pt(q.fs) }, caja)); }
     else if (s.type === 'title') {
       const z = titleSizes(S), partes = [{ text: shown(E, z.L.join('\n')), options: { fontSize: pt(z.t), breakLine: !!z.a } }];
       if (z.a) partes.push({ text: String(S.autor).trim(), options: { fontSize: pt(z.a), bold: false } });

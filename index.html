@@ -270,9 +270,10 @@ h2{font-size:16px;margin:0}
         <span class="dim" id="lcount"></span>
         <button class="bt" id="bVideo" title="Elige un video de esta computadora y lo muestra en la pantalla de proyección">▶ Video de la computadora</button>
         <input type="file" id="fPv" accept="video/*,.mp4,.m4v,.webm,.mov,.mkv" hidden>
+        <button class="bt" id="bVent" hidden title="Muestra en la pantalla de proyección una ventana de esta computadora: una llamada de Zoom o Meet, un PowerPoint abierto, una pestaña con Canva…">🖥 Mostrar una ventana</button>
         <button class="bt" id="bAct" title="Vuelve a leer la carpeta de Drive">↻ Actualizar</button>
         <button class="bt" id="bCarp">Carpeta de Drive</button>
-        <button class="bt" id="bLocal" hidden title="Elige una carpeta de esta computadora o de la red: se leen sus PowerPoint, fotos y videos">Carpeta de la computadora</button>
+        <button class="bt" id="bLocal" hidden title="Elige una carpeta de esta computadora o de la red: se leen sus fotos y videos">Carpeta de la computadora</button>
       </div>
       <div class="fila" id="lpc" hidden><span class="dim" id="lpcT"></span><button class="bt pri" id="lpcB">Permitir</button></div>
       <div id="lgrid"></div>
@@ -675,10 +676,9 @@ function libRender() {
       d.appendChild(el('span', 'tg mia', 'CREADA'));
       op('✎', puedeEditar() ? 'Editar' : 'Ver', () => editar(it.c));
     } else if (it.tipo === 'l') {
-      const tg = el('span', 'tg', it.t === 'p' ? 'PPTX' : it.t === 'f' ? 'FOTO' : 'VIDEO');
-      tg.title = it.t === 'p' ? 'PowerPoint de la carpeta de esta computadora: se proyecta su letra con el estilo de Yupaletras.' : it.t === 'f' ? 'Foto de la carpeta de esta computadora' : 'Video de la carpeta de esta computadora';
+      const tg = el('span', 'tg', it.t === 'f' ? 'FOTO' : 'VIDEO');
+      tg.title = it.t === 'f' ? 'Foto de la carpeta de esta computadora' : 'Video de la carpeta de esta computadora';
       d.appendChild(tg);
-      if (it.t === 'p' && puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
     } else {
       if (it.t === 'p') { const tg = el('span', 'tg', 'PPTX'); tg.title = 'Archivo PowerPoint de Drive: se proyecta tal como es, con sus imágenes. Impórtalo si quieres cambiarle la letra o el fondo.'; d.appendChild(tg); }
       if (puedeEditar()) op('⤓', 'Importar a Yupaletras (para cambiarle el fondo)', e => importar(it, e.currentTarget));
@@ -709,20 +709,19 @@ $('#cat').addEventListener('change', libRender);
 $('#q').addEventListener('keydown', e => { if (e.key === 'Enter' && hallados.length) proyectar(hallados[0]); });
 function proyectar(it) {
   if (it.tipo === 'c') proyectarCancion({ titulo: it.c.titulo, autor: it.c.autor || '', letra: it.c.letra, estilo: estiloDe(it.c.estilo) }, 0);
-  else if (it.tipo === 'l') { if (it.t === 'p') abrirVista(it); else proyectarLocal(it.x, it.name); }
+  else if (it.tipo === 'l') proyectarLocal(it.x, it.name);
   else abrirVista(it);
 }
 
 /* Vista previa de una presentación de Drive: ver sus diapositivas y su letra antes de proyectarla,
    y desde ahí modificarla o duplicarla (las dos la traen a «Crear diapositivas»; el archivo de Drive no se toca). */
 function abrirVista(it) {
-  let n = 0, textos = null, ids = null, S = null, deck = null, vivo = true;
+  let n = 0, textos = null, ids = null, vivo = true;
   const velo = el('div', 'velo'), c = el('div', 'card vista');
   const cab = el('div', 'cab'); cab.appendChild(el('h2', '', it.name));
   const x = el('button', 'bt peq', '✕'); x.title = 'Cerrar'; x.setAttribute('aria-label', 'Cerrar'); x.onclick = cerrarModal; cab.appendChild(x); c.appendChild(cab);
-  const pc = it.tipo === 'l', real = !pc;      // real: lo de Drive (de Google o PowerPoint) se muestra tal como es, con sus imágenes
-  const lee = pc || puedeEditar(), nocambia = pc ? 'El archivo de la computadora no cambia.' : 'El archivo de Drive no cambia.';
-  c.appendChild(el('div', 'dim', pc ? 'PowerPoint de esta computadora: se proyecta su letra con el estilo de Yupaletras' + (it.x.c ? ' · ' + it.x.c : '') : (it.t === 's' ? 'Presentación de Google en Drive' : 'PowerPoint en Drive: se proyecta tal como es') + (it.sub ? ' · ' + it.sub : '')));
+  const lee = puedeEditar(), nocambia = 'El archivo de Drive no cambia.';
+  c.appendChild(el('div', 'dim', (it.t === 's' ? 'Presentación de Google en Drive' : 'PowerPoint en Drive: se proyecta tal como es') + (it.sub ? ' · ' + it.sub : '')));
   const g = el('div', 'vgrid'), izq = el('div'), marco = el('div', 'vmarco'), nav = el('div', 'vnav'), lista = el('div', 'vlista');
   const ant = el('button', 'bt', '◀'), num = el('span'), sig = el('button', 'bt', '▶');
   ant.setAttribute('aria-label', 'Diapositiva anterior'); sig.setAttribute('aria-label', 'Diapositiva siguiente');
@@ -736,13 +735,11 @@ function abrirVista(it) {
   if (puedeEditar()) { pie.appendChild(bMod); pie.appendChild(bDup); }
   pie.appendChild(bPro); c.appendChild(pie); velo.appendChild(c);
 
-  const total = () => real ? (textos ? textos.length : 0) : (deck ? deck.length : 0);
+  const total = () => textos ? textos.length : 0;
   function pintar() {
     marco.textContent = '';
-    if (real) {      // la diapositiva real, traída de Drive
-      const f = el('iframe'); f.title = 'Vista previa'; f.setAttribute('tabindex', '-1'); f.src = baseDocs(it.id) + '#slide=' + (n + 1);
-      marco.appendChild(f); marco.appendChild(el('div', 'vtapa'));
-    } else if (S) { estilar(marco, S.estilo); marco.appendChild(frameEl(S, deck[n])); }
+    const f = el('iframe'); f.title = 'Vista previa'; f.setAttribute('tabindex', '-1'); f.src = baseDocs(it.id) + '#slide=' + (n + 1);      // la diapositiva real, traída de Drive
+    marco.appendChild(f); marco.appendChild(el('div', 'vtapa'));
     num.textContent = (n + 1) + (total() ? ' / ' + total() : '');
     ant.disabled = n <= 0; sig.disabled = !!total() && n >= total() - 1;
     lista.querySelectorAll('button').forEach((b, i) => { b.classList.toggle('on', i === n); if (i === n) b.scrollIntoView({ block: 'nearest' }); });
@@ -757,9 +754,7 @@ function abrirVista(it) {
   velo.addEventListener('mousedown', e => { if (e.target === velo) cerrarModal(); });
   bPro.onclick = () => {
     cerrarModal();
-    if (real) proyectarDrive(baseDocs(it.id), it.name, it.id, { i: n, textos, ids });
-    else if (S) proyectarCancion(S, n, it.name);
-    else proyectarLocal(it.x, it.name);
+    proyectarDrive(baseDocs(it.id), it.name, it.id, { i: n, textos, ids });
   };
   const traer = copia => {
     if (!diapos) return;
@@ -773,15 +768,10 @@ function abrirVista(it) {
   lista.appendChild(el('div', 'dim', lee ? 'Leyendo la letra…' : 'La letra no está disponible en modo de solo lectura.'));
   $('#modal').textContent = ''; $('#modal').appendChild(velo); pintar(); bPro.focus();
   velo.vivo = () => vivo; const obs = new MutationObserver(() => { if (!velo.isConnected) { vivo = false; obs.disconnect(); } }); obs.observe($('#modal'), { childList: true });
-  if (lee) (pc ? archivoLocal(it.x).then(YLCarpeta.leerPptx) : drive({ accion: 'importar', id: it.id })).then(d => {
+  if (lee) drive({ accion: 'importar', id: it.id }).then(d => {
     if (!vivo) return;
     diapos = (d.diapos || []).filter(l => Array.isArray(l) && l.length);
-    if (real) { textos = Array.isArray(d.todas) ? d.todas : diapos; ids = Array.isArray(d.ids) ? d.ids : null; llenar(textos.map(l => (l || []).join('\n'))); }
-    else {
-      const letra = letraDe(diapos, it.name);
-      if (letra) { S = { titulo: it.name, autor: '', letra, estilo: Object.assign({}, ed.estilo) }; deck = allSlides(S); llenar(deck.map(s => s.type === 'title' ? 'Título: ' + it.name : s.type === 'blank' ? '' : s.lines.join('\n'))); }
-      else { lista.textContent = ''; lista.appendChild(el('div', 'dim', 'Este PowerPoint no tiene texto que se pueda leer (quizá la letra está puesta como imagen). No se puede proyectar desde aquí: súbelo a la carpeta de Drive y se verá tal como es.')); bPro.disabled = true; }
-    }
+    textos = Array.isArray(d.todas) ? d.todas : diapos; ids = Array.isArray(d.ids) ? d.ids : null; llenar(textos.map(l => (l || []).join('\n')));
     bMod.disabled = bDup.disabled = !diapos.length; pintar();
   }).catch(e => { if (!vivo) return; lista.textContent = ''; lista.appendChild(el('div', 'dim', 'No se pudo leer la letra: ' + (e.message || 'error') + ' Igual puedes proyectarla.')); });
 }
@@ -824,7 +814,8 @@ async function guardarCarpeta(enlace, boton) {
 }
 $('#bCarp').onclick = abrirCarpeta;
 
-/* Carpeta de esta computadora (o de la red, por ejemplo la del servidor): carpeta.js. Se leen solo PowerPoint, fotos y videos.
+/* Carpeta de esta computadora (o de la red, por ejemplo la del servidor): carpeta.js. Se leen solo fotos y videos
+   (los PowerPoint van en la carpeta de Drive, donde se proyectan tal como son).
    Vale solo para este equipo: el navegador recuerda la carpeta y al volver puede pedir permiso otra vez (estado 'pide'). */
 let local = { h: null, nombre: '', items: [], tope: false, estado: 'no' };
 const nombreLocal = x => String(x.n).replace(/\.[a-z0-9]+$/i, '').trim().slice(0, 120) || x.n;
@@ -844,7 +835,8 @@ async function localLeer(pedir) {      // pedir = dentro de un clic, se puede pr
 function abrirLocal() {
   const velo = el('div', 'velo'), c = el('div', 'card');
   c.appendChild(el('h2', '', 'Carpeta de la computadora'));
-  c.appendChild(el('p', 'dim', 'Elige una carpeta de esta computadora o de la red (por ejemplo, la del servidor). Yupaletras lee solo PowerPoint (.pptx), fotos y videos, también de sus subcarpetas; lo demás no aparece. Nada se sube: los archivos se quedan donde están.'));
+  c.appendChild(el('p', 'dim', 'Elige una carpeta de esta computadora o de la red (por ejemplo, la del servidor). Yupaletras lee solo fotos y videos, también de sus subcarpetas; lo demás no aparece. Nada se sube: los archivos se quedan donde están.'));
+  c.appendChild(el('p', 'dim', 'Los PowerPoint no se leen de aquí: súbelos a la carpeta de Drive y se proyectan tal como son.'));
   c.appendChild(el('p', 'dim', 'La carpeta se recuerda solo en este equipo. Al volver a abrir Yupaletras, el navegador puede pedirte permiso otra vez con un clic.'));
   if (local.h) c.appendChild(el('p', '', 'Carpeta actual: «' + local.nombre + '»' + (local.estado === 'ok' ? ' · ' + local.items.length + (local.items.length === 1 ? ' archivo' : ' archivos') : ' · falta permitir la lectura')));
   const f = el('div', 'fila');
@@ -859,7 +851,7 @@ function abrirLocal() {
   g.onclick = () => ocupado(g, 'Leyendo…', async () => {
     const h = await YLCarpeta.elegir(); if (!h) return;
     local.h = h; local.nombre = h.name; await localLeer(true); cerrarModal();
-    if (local.estado === 'ok') toast(local.items.length ? 'Carpeta «' + h.name + '»: ' + local.items.length + ' archivos' : 'En «' + h.name + '» no hay PowerPoint, fotos ni videos');
+    if (local.estado === 'ok') toast(local.items.length ? 'Carpeta «' + h.name + '»: ' + local.items.length + ' archivos' : 'En «' + h.name + '» no hay fotos ni videos');
   });
   f.appendChild(g); c.appendChild(f); velo.appendChild(c);
   velo.addEventListener('mousedown', e => { if (e.target === velo) cerrarModal(); });
@@ -867,21 +859,16 @@ function abrirLocal() {
 }
 $('#bLocal').onclick = abrirLocal;
 $('#lpcB').onclick = e => ocupado(e.currentTarget, 'Leyendo…', () => localLeer(true));
-// Proyecta un archivo de la carpeta: video y foto tal cual; PowerPoint, su letra con el estilo de Yupaletras
+// Proyecta un archivo de la carpeta: video o foto, tal cual
 async function proyectarLocal(x, nombre, tk) {
   if (!asegurarPantalla()) return;      // dentro del clic: después de leer el archivo el navegador ya no deja abrir la ventana
   const sigue = () => !tk || (colaPend && colaPend.tk === tk);
   try {
     const a = await archivoLocal(x); if (!sigue()) return;
     if (x.t === 'v') proyectarVideo(a, nombre, tk);
-    else if (x.t === 'f') {      // fuera de una lista, las flechas pasan por las demás fotos de su misma carpeta
+    else {      // foto: fuera de una lista, las flechas pasan por las demás fotos de su misma carpeta
       const serie = tk ? [x] : local.items.filter(y => y.t === 'f' && y.c === x.c);
       poner({ tipo: 'foto', archivo: a, fk: uid(), nombre, serie, i: Math.max(0, serie.indexOf(x)), tk });
-    } else {
-      const d = await YLCarpeta.leerPptx(a); if (!sigue()) return;
-      const letra = letraDe(d.diapos, nombre);
-      if (!letra) { toast('«' + nombre + '» no tiene texto que se pueda leer (quizá la letra está puesta como imagen).'); return; }
-      proyectarCancion({ titulo: nombre, autor: '', letra, estilo: Object.assign({}, ed.estilo) }, 0, nombre, tk);
     }
   } catch (e) { toast(e.message || 'No se pudo abrir el archivo'); }
 }
@@ -909,7 +896,7 @@ function aCrear(titulo, diapos) {      // deja la letra en «Crear diapositivas�
 async function importar(it, boton) {
   if (sucio && !confirm('Tienes cambios sin guardar en «Crear diapositivas». Si importas, se pierden. ¿Continuar?')) return;
   await ocupado(boton, '…', async () => {
-    const d = it.tipo === 'l' ? await YLCarpeta.leerPptx(await archivoLocal(it.x)) : await drive({ accion: 'importar', id: it.id });
+    const d = await drive({ accion: 'importar', id: it.id });
     aCrear(it.name, d.diapos);
     toast('Importada: elige el fondo y presiona «Guardar en la biblioteca»');
   });
@@ -991,7 +978,8 @@ function aLista(item) {
 function subItem(x) {
   if (x.k === 'c') return D.canciones.some(c => c.id === x.id) ? 'Creada en Yupaletras' : 'Ya no está en la biblioteca';
   if (x.k === 'd') return x.t === 's' ? 'Presentación de Drive' : 'PowerPoint de Drive';
-  if (x.k === 'l') return (x.t === 'p' ? 'PowerPoint' : x.t === 'f' ? 'Foto' : 'Video') + ' de la carpeta de la computadora' + (enLocal(x) ? '' : ' · no está en la carpeta de este equipo');
+  if (x.k === 'l' && x.t === 'p') return 'PowerPoint de la computadora · ya no se proyecta desde ahí: súbelo a la carpeta de Drive';
+  if (x.k === 'l') return (x.t === 'f' ? 'Foto' : 'Video') + ' de la carpeta de la computadora' + (enLocal(x) ? '' : ' · no está en la carpeta de este equipo');
   return archivos.has(x.u) ? 'Video de esta computadora' : 'Video de esta computadora · habrá que elegir el archivo otra vez';
 }
 const enLocal = x => local.items.find(y => y.r === x.r && y.t === x.t) || null;      // el archivo de la carpeta al que apunta un elemento de lista
@@ -1067,6 +1055,7 @@ function colaIr(l, i, alFinal) {
     colaPend = pend;
     proyectarDrive(baseDocs(x.id), x.n, x.id, null, tk);
   } else if (x.k === 'l') {
+    if (x.t === 'p') { toast('Los PowerPoint de la computadora ya no se proyectan desde ahí. Sube «' + x.n + '» a la carpeta de Drive y agrégalo a la lista desde la Biblioteca.', 8000); return; }
     const y = enLocal(x);
     if (!y) { toast(local.estado === 'pide' ? 'Primero permite leer la carpeta de la computadora (en la Biblioteca).' : '«' + x.n + '» no está en la carpeta de este equipo. Elige la carpeta en la Biblioteca o quítalo de la lista.'); return; }
     colaPend = pend; proyectarLocal(y, x.n, tk);
@@ -1090,6 +1079,46 @@ $('#fPv').addEventListener('change', e => {
   f(a);
 });
 $('#bVideo').onclick = () => { if (asegurarPantalla()) elegirVideo(a => proyectarVideo(a)); };
+
+/* Mostrar una ventana de esta computadora (Zoom, Meet, un PowerPoint abierto, una pestaña con Canva…): esas páginas no dejan
+   incrustarse por su enlace, así que se muestra lo que se ve en la ventana. El navegador pregunta cuál (cada vez). La imagen en
+   vivo se entrega directo a la ventana de proyección (ylVentana), no por el canal. El sonido sale por el propio programa. */
+const puedeVentana = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+$('#bVent').hidden = !puedeVentana;
+function refPantalla() {      // la ventana de proyección; si quedó abierta de antes (se recargó esta página), se la vuelve a tomar por su nombre
+  if (pantalla && !pantalla.closed) return pantalla;
+  let w = null; try { w = window.open('', 'yl_proyector'); } catch (e) { }
+  if (!w) return null;
+  let es = false; try { es = /proyector\.html$/.test(w.location.pathname); } catch (e) { }
+  if (!es) { try { w.location.replace('proyector.html'); } catch (e) { return null; } }
+  pantalla = w; return w;
+}
+let dandoVn = 0;
+function darVentana() {      // entrega la imagen a la ventana de proyección; si aún está cargando, espera un poco
+  if (!pr || pr.tipo !== 'ventana') return;
+  const actual = pr, turno = ++dandoVn; let n = 0;
+  (function probar() {
+    if (pr !== actual || turno !== dandoVn) return;
+    try { const w = pantalla && !pantalla.closed ? pantalla : null; if (w && typeof w.ylVentana === 'function') { if (w.ylVk() !== actual.vk) w.ylVentana(actual.stream, actual.vk); return; } } catch (e) { }
+    if (++n < 40) setTimeout(probar, 200);
+  })();
+}
+async function mostrarVentana() {
+  if (!asegurarPantalla()) return;
+  let s;
+  try { s = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } }, audio: false }); }
+  catch (e) {
+    if (e && e.name === 'InvalidStateError') toast('La pantalla de proyección ya está abierta. Presiona otra vez «Mostrar una ventana».', 8000);      // el clic se gastó en abrir la ventana
+    else if (!e || e.name !== 'NotAllowedError') toast('No se pudo mostrar esa ventana.');      // NotAllowedError = se canceló
+    return;
+  }
+  if (!refPantalla()) { s.getTracks().forEach(x => x.stop()); toast('No se encontró la pantalla de proyección. Ábrela con el botón «Pantalla de proyección» e inténtalo otra vez.', 8000); return; }
+  poner({ tipo: 'ventana', stream: s, vk: uid(), nombre: 'Ventana de esta computadora' });
+  const actual = pr, pista = s.getVideoTracks()[0];
+  if (pista) pista.addEventListener('ended', () => { if (pr === actual) { quitar(); toast('Se dejó de compartir la ventana.'); } });      // se cerró la ventana o se presionó «Dejar de compartir»
+}
+$('#bVent').onclick = mostrarVentana;
+const soltarVentana = sig => { if (pr && pr.tipo === 'ventana' && pr !== sig) { try { pr.stream.getTracks().forEach(x => x.stop()); } catch (e) { } } };
 $('#pVideo').onclick = () => elegirVideo(a => {
   const l = listaAct() || nuevaLista('Mi lista'), x = { u: uid(), k: 'v', n: nombreVideo(a) };
   archivos.set(x.u, a); l.items.push(x); guardarLista(l); listaRender(); if (pr) pintarCtrl();
@@ -1298,6 +1327,7 @@ window.addEventListener('beforeunload', borrador);
    PROYECTAR: esta ventana es el control; la imagen sale en la ventana de proyección.
    pr = lo que está en pantalla: {tipo:'cancion', S, deck, i} · {tipo:'drive', base, i, total, textos} · {tipo:'visor', url}
         · {tipo:'video', archivo, vk, pausa, bucle, cur, dur, mudo} (un video de esta computadora; la pantalla avisa por dónde va)
+        · {tipo:'ventana', stream, vk} (una ventana de esta computadora, en vivo: Zoom, PowerPoint abierto, Canva…)
    ===================================================================== */
 const canal = 'BroadcastChannel' in window ? new BroadcastChannel('yl_proyector') : null;
 let pantalla = null, viva = false, pr = null;
@@ -1331,6 +1361,7 @@ if (canal) {
     if (m.t === 'hola') { viva = true; pintarPantalla(); enviar(); }
     else if (m.t === 'adios') { viva = false; pantalla = null; pintarPantalla(); }
     else if (m.t === 'tecla') tecla(m.k);
+    else if (m.t === 'pidevn') { if (pr && pr.tipo === 'ventana' && pr.vk === m.vk) { refPantalla(); darVentana(); } }
     else if (m.t === 'vt' && pr && pr.tipo === 'video' && pr.vk === m.vk) {
       pr.cur = +m.cur || 0; pr.dur = +m.dur || 0; pr.pausa = !!m.pausa; pr.mudo = !!m.mudo; if (m.error) pr.error = true;
       pintarVid();
@@ -1352,6 +1383,7 @@ function enviar() {      // manda a la pantalla el estado completo (sirve tambi�
   else if (pr.tipo === 'drive') decir({ t: 'drive', base: pr.base, n: pr.i + 1, total: pr.total || 0, negro: pr.negro, prox });
   else if (pr.tipo === 'video') { try { decir({ t: 'video', archivo: pr.archivo, vk: pr.vk, pausa: pr.pausa, bucle: pr.bucle, negro: pr.negro, prox }); } catch (e) { toast('No se pudo mandar el video a la pantalla de proyección.'); } }
   else if (pr.tipo === 'foto') { try { decir({ t: 'foto', archivo: pr.archivo, fk: pr.fk, negro: pr.negro, prox }); } catch (e) { toast('No se pudo mandar la foto a la pantalla de proyección.'); } }
+  else if (pr.tipo === 'ventana') { decir({ t: 'ventana', vk: pr.vk, negro: pr.negro, prox }); darVentana(); }
   else decir({ t: 'visor', url: pr.url, negro: pr.negro, prox });
 }
 const reloj = s => { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
@@ -1421,6 +1453,7 @@ function pintarCtrl() {
     const l = pr.textos && pr.textos[pr.i]; txt = l && l.length ? l.join(' / ') : (pr.textos ? 'Diapositiva sin texto' : 'Presentación de Drive');
     $('#cNum').textContent = (pr.i + 1) + (pr.total ? ' / ' + pr.total : '');
   } else if (pr.tipo === 'foto') { txt = 'Foto de esta computadora'; $('#cNum').textContent = (pr.i + 1) + ' / ' + pr.serie.length; }
+  else if (pr.tipo === 'ventana') { txt = 'En vivo desde esta computadora · el sonido sale por su propio programa · no minimices esa ventana'; $('#cNum').textContent = ''; }
   else { txt = 'Se desplaza en la propia pantalla de proyección'; $('#cNum').textContent = ''; }
   $('#cTxt').textContent = pr.negro ? 'Pantalla en negro' : txt;
   const nav = pr.tipo === 'cancion' || pr.tipo === 'drive' || pr.tipo === 'foto'; $('#cAnt').hidden = !nav; $('#cSig').hidden = !nav; $('#cNum').hidden = !nav;
@@ -1447,11 +1480,11 @@ function ir(n, sinSalto) {
 function poner(nuevo) {
   // Solo sigue siendo «de la lista» si lo puso la lista (tk); cualquier otra cosa que se proyecte la suelta
   cola = nuevo.tk && colaPend && colaPend.tk === nuevo.tk ? colaPend : null; colaPend = null;
-  pr = Object.assign({ i: 0, negro: false }, nuevo); enviar(); pintarCtrl(); listaRender();
+  soltarVentana(nuevo); pr = Object.assign({ i: 0, negro: false }, nuevo); enviar(); pintarCtrl(); listaRender();
   // Suelta el buscador o la casilla donde estaba el cursor: desde ya las flechas pasan las diapositivas
   const a = document.activeElement; if (a && a !== document.body && a.blur) a.blur();
 }
-function quitar() { pr = null; cola = null; colaPend = null; enviar(); pintarCtrl(); listaRender(); }
+function quitar() { soltarVentana(null); pr = null; cola = null; colaPend = null; enviar(); pintarCtrl(); listaRender(); }
 $('#cPrev').onclick = () => { const p = colaPos(); if (p > 0) colaIr(cola.l, p - 1); };
 $('#cNext').onclick = () => { const p = colaPos(); if (p >= 0 && p < cola.l.items.length - 1) colaIr(cola.l, p + 1); };
 function proyectarVideo(archivo, nombre, tk) {

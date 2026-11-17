@@ -33,6 +33,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
 /* Video de la computadora: entero en pantalla, sin recortar */
 #vd{position:absolute;inset:0;background:#000}
 #vd video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+/* Ventana de la computadora (Zoom, PowerPoint abierto, una pestaña con Canva…): entera en pantalla, sin recortar */
+#vn{position:absolute;inset:0;background:#000}
+#vn video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
 /* Foto de la computadora: entera en pantalla, sin recortar */
 #ft{position:absolute;inset:0;background:#000}
 #ft img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
@@ -53,6 +56,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:syste
   <div class="frame" id="stage" hidden></div>
   <div id="dr" hidden></div>
   <div id="vd" hidden></div>
+  <div id="vn" hidden></div>
   <div id="ft" hidden></div>
   <div id="tapa"></div>
   <div id="negro" hidden></div>
@@ -202,6 +206,23 @@ function peli(m) {
   if (!m.pausa) tocar();
 }
 
+/* ---------- Ventana de la computadora: lo que se ve en una ventana o pestaña elegida en el control (Zoom, PowerPoint, Canva…).
+   La imagen en vivo no viaja por el canal: el control la entrega llamando a ylVentana() de esta ventana (misma computadora y
+   mismo navegador). Se muestra a su tamaño real, sin volver a comprimirla. El sonido sigue saliendo por su propio programa. ---------- */
+let vnk = null;
+function quitarVentana() { vnk = null; const v = $('vn').querySelector('video'); if (v) { v.srcObject = null; v.remove(); } $('vn').hidden = true; }
+window.ylVk = () => vnk;
+window.ylVentana = (flujo, vk) => {
+  quitarVentana(); vnk = vk;
+  const v = document.createElement('video'); v.muted = true; v.autoplay = true; v.playsInline = true; v.setAttribute('tabindex', '-1');
+  v.srcObject = flujo; $('vn').appendChild(v); $('vn').hidden = false;
+  const q = v.play(); if (q && q.catch) q.catch(() => { });
+};
+function ventana(m) {
+  quitarVideo(); quitarPeli(); soltarDrive(); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true;
+  if (vnk !== m.vk) { quitarVentana(); decir({ t: 'pidevn', vk: m.vk }); }      // esta ventana se recargó o aún no la recibió: se la pide al control
+}
+
 /* ---------- Foto de la computadora: el control manda el archivo. La anterior sigue a la vista hasta que la nueva está lista ---------- */
 let fk = null, fUrl = null;
 function quitarFoto() { fk = null; $('ft').textContent = ''; $('ft').hidden = true; if (fUrl) { URL.revokeObjectURL(fUrl); fUrl = null; } }
@@ -223,8 +244,9 @@ if (canal) canal.onmessage = e => {
   if (m.t === 'vcmd') { if (pv && m.vk === pk && m.c === 'ir') { try { pv.currentTime = Math.max(0, Math.min(isFinite(pv.duration) ? pv.duration : 1e9, +m.s || 0)); } catch (x) { } } return; }
   if (m.t === 'ping') { decir({ t: 'hola' }); return; }
   if (m.t === 'cerrar') { window.close(); return; }
+  if (m.t !== 'ventana') quitarVentana();
   if (m.t === 'nada') { hay = false; quitarVideo(); quitarPeli(); quitarFoto(); soltarDrive(); siguiente(null); quitarVisor(); $('stage').hidden = true; $('dr').hidden = true; $('negro').hidden = true; $('guia').hidden = false; return; }
-  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else if (m.t === 'video') peli(m); else if (m.t === 'foto') foto(m); else return;
+  if (m.t === 'cancion') cancion(m); else if (m.t === 'drive') drive(m); else if (m.t === 'visor') visor(m); else if (m.t === 'video') peli(m); else if (m.t === 'foto') foto(m); else if (m.t === 'ventana') ventana(m); else return;
   if (m.t !== 'foto') quitarFoto();
   siguiente(m.prox);
   hay = true; $('guia').hidden = true; $('negro').hidden = !m.negro;

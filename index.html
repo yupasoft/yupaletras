@@ -119,10 +119,24 @@ h2{font-size:16px;margin:0}
 .fondos .fo.mas{border-style:dashed}
 .fondos .fo.vid::after{content:"▶";position:absolute;left:5px;bottom:4px;font-size:11px;color:#fff;text-shadow:0 1px 3px #000}
 .fondos .qx{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(12,26,46,.8);color:#fff;font-size:11px;line-height:1;padding:0}
-#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:14px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--dz,270px)),1fr));gap:12px;margin-top:10px}
+/* Zoom de las diapositivas: --dz es el ancho mínimo de cada una (se guarda por equipo) */
+.zoomf{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.zoomf input{flex:0 1 220px;min-width:80px;accent-color:var(--acc)}
+.zoomf button{flex:none;width:34px;height:34px;border:1px solid var(--bd);border-radius:8px;background:transparent;font-size:18px;font-weight:700;line-height:1}
+.zoomf button:hover{border-color:var(--acc)}
+/* En computadora cada lado baja por su cuenta: el formulario no mueve las diapositivas ni al revés */
+@media (min-width:901px){
+  main.en-crear{padding-bottom:18px}
+  .crear{grid-template-rows:minmax(0,1fr);align-items:stretch;height:calc(100dvh - var(--top,110px) - 36px - var(--ch,0px));min-height:400px}
+  .crear > aside{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+  .crear > .lado{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .crear .acciones{position:static;margin-top:0;padding-top:0}
+  #dz{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:0 8px 4px 2px}
+}
 .dp{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
 .dp .frame{cursor:pointer}
-.dpb{display:flex;align-items:center;gap:4px;padding:5px 8px;font:500 12px 'IBM Plex Mono',monospace;color:var(--mute)}
+.dpb{display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:5px 8px;font:500 12px 'IBM Plex Mono',monospace;color:var(--mute)}
 .dpb span{margin-right:auto}
 .dpb button{min-width:30px;height:28px;border:1px solid var(--bd);border-radius:6px;background:transparent;font-size:13px}
 .dpb button:hover{border-color:var(--acc)}
@@ -354,7 +368,7 @@ h2{font-size:16px;margin:0}
           <label class="marcar"><input type="checkbox" data-e="shadow">Sombra en el texto</label>
           <label class="marcar"><input type="checkbox" data-e="resalte">Letra negra con resaltado blanco (como las de Drive)</label>
         </aside>
-        <div>
+        <div class="lado">
           <div class="fila acciones">
             <span class="dim sep" id="count" style="margin-left:0;margin-right:auto"></span>
             <button class="bt pri" id="bGuardar">Guardar en la biblioteca</button>
@@ -365,8 +379,16 @@ h2{font-size:16px;margin:0}
             <button class="bt solo-pc" id="bPdf">Imprimir / PDF</button>
             <button class="bt mal" id="bBorrar" hidden>Eliminar</button>
           </div>
-          <div id="grid"></div>
-          <div class="vacio" id="empty"><b>Aún no hay diapositivas</b>Pega la letra de una canción y aparecerán aquí, listas para proyectar.</div>
+          <div class="zoomf">
+            <span>Zoom</span>
+            <button type="button" id="zMenos" title="Alejar: diapositivas más pequeñas" aria-label="Alejar: diapositivas más pequeñas">−</button>
+            <input type="range" id="zDz" min="150" max="640" step="10" value="270" aria-label="Tamaño de las diapositivas">
+            <button type="button" id="zMas" title="Acercar: diapositivas más grandes" aria-label="Acercar: diapositivas más grandes">+</button>
+          </div>
+          <div id="dz">
+            <div id="grid"></div>
+            <div class="vacio" id="empty"><b>Aún no hay diapositivas</b>Pega la letra de una canción y aparecerán aquí, listas para proyectar.</div>
+          </div>
         </div>
       </div>
     </section>
@@ -523,6 +545,7 @@ function setTab(t) {
   const cambia = t !== tab || !document.querySelector('main > section:not([hidden])');
   tab = t; try { localStorage.setItem('yl_tab', t); } catch (e) { }
   $('#vLib').hidden = t !== 'lib'; $('#vLista').hidden = t !== 'lista'; $('#vCrear').hidden = t !== 'crear';
+  document.querySelector('main').classList.toggle('en-crear', t === 'crear');
   document.querySelectorAll('#tabs button').forEach(b => { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   if (cambia) { try { V.entrar(t === 'lib' ? $('#vLib') : t === 'lista' ? $('#vLista') : $('#vCrear')); } catch (e) { } }
   if (t === 'lib' && matchMedia('(min-width:901px)').matches) $('#q').focus();
@@ -1656,9 +1679,23 @@ $('#bPptx').onclick = e => {
 function medirBarra() {
   const b = document.querySelector('.barra'), c = document.getElementById('ctrl');
   if (b && b.offsetHeight) document.documentElement.style.setProperty('--bh', b.offsetHeight + 'px');
+  const ci = document.getElementById('cinta');      // --top: dónde empieza el contenido (cinta de «viendo como» + barra)
+  if (b && b.offsetHeight) document.documentElement.style.setProperty('--top', (b.offsetHeight + (ci && !ci.hidden ? ci.offsetHeight : 0)) + 'px');
   document.documentElement.style.setProperty('--ch', (c && !c.hidden ? c.offsetHeight : 0) + 'px');      // la franja de control va fija abajo
 }
 window.addEventListener('resize', medirBarra);
+
+/* Zoom de las diapositivas de «Crear»: cambia el ancho mínimo de cada una; se recuerda en este equipo */
+function zoomDiapos(v, guardar) {
+  const z = $('#zDz'); v = Math.max(+z.min, Math.min(+z.max, Math.round(+v) || 270));
+  z.value = v; $('#grid').style.setProperty('--dz', v + 'px');
+  $('#zMenos').disabled = v <= +z.min; $('#zMas').disabled = v >= +z.max;
+  if (guardar) { try { localStorage.setItem('yl_zoom', v); } catch (e) { } }
+}
+$('#zDz').oninput = e => zoomDiapos(e.target.value, true);
+$('#zMenos').onclick = () => zoomDiapos(+$('#zDz').value - 40, true);
+$('#zMas').onclick = () => zoomDiapos(+$('#zDz').value + 40, true);
+{ let z = 270; try { z = +localStorage.getItem('yl_zoom') || 270; } catch (e) { } zoomDiapos(z, false); }
 
 /* ---------- Arranque ---------- */
 $('#gLogo').innerHTML = isotipo(46); $('#logo').innerHTML = isotipo(24);
